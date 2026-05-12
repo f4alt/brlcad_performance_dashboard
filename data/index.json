@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-05-12T21:10:52.800424Z",
-  "latest_run": "2026-05-12T211034Z-b0f375ecd0d6",
+  "generated_at": "2026-05-12T21:15:03.693247Z",
+  "latest_run": "2026-05-12T211451Z-8f5057c335de",
   "runs": [
     {
       "branch": "main",
@@ -35,6 +35,23 @@
       "timestamp": "2026-05-12T21:10:34Z",
       "workflow_run_id": "25762399799",
       "workflow_url": "https://github.com/f4alt/brlcad/actions/runs/25762399799"
+    },
+    {
+      "branch": "main",
+      "commit": "8f5057c335de1519a744a2daa150f6d5ee06e90a",
+      "id": "2026-05-12T211451Z-8f5057c335de",
+      "lanes": {
+        "benchmark": "PASS",
+        "rtcmp_generic": "PASS",
+        "rtcmp_prims": "FAIL"
+      },
+      "path": "data/runs/2026-05-12T211454Z-8f5057c335de/summary.json",
+      "repository": "f4alt/brlcad",
+      "short_commit": "8f5057c335de",
+      "status": "FAIL",
+      "timestamp": "2026-05-12T21:14:51Z",
+      "workflow_run_id": "25762499156",
+      "workflow_url": "https://github.com/f4alt/brlcad/actions/runs/25762499156"
     }
   ],
   "schema_version": 1
