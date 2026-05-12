@@ -1,3 +1,56 @@
-_site/
+# ----------------------------
+# OS / editor junk
+# ----------------------------
 .DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# ----------------------------
+# Python cache / tooling
+# ----------------------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.python-version
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
 .vs/
+
+# ----------------------------
+# Local build / deploy output
+# ----------------------------
+_site/
+dist/
+build/
+tmp/
+temp/
+
+# ----------------------------
+# Logs
+# ----------------------------
+*.log
+
+# ----------------------------
+# Local env / secrets
+# ----------------------------
+.env
+.env.*
+*.local
+
+# ----------------------------
+# Archive / scratch files
+# ----------------------------
+*.bak
+*.tmp
