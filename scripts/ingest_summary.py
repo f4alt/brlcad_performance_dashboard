@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Validate archived BRL-CAD performance summaries and build dashboard data.
 
-The immutable source of truth is data/runs/<run-id>/summary.json. This script
+The immutable source of truth is data/uploads/<run-id>/summary.json. This script
 validates those summaries, builds the global run index, and delegates lane-specific
 precomputation to scripts/lane_processors/* modules.
 """
@@ -17,7 +17,7 @@ from typing import Any
 from lane_processors import benchmark
 
 ROOT = Path(__file__).resolve().parents[1]
-RUNS_DIR = ROOT / "data" / "runs"
+RUNS_DIR = ROOT / "data" / "uploads"
 INDEX_PATH = ROOT / "data" / "index.json"
 STATUS_PATH = ROOT / "data" / "status" / "latest.json"
 

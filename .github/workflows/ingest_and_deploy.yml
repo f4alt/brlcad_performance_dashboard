@@ -4,10 +4,10 @@ on:
   push:
     branches: [main]
     paths:
-      - "data/runs/**/summary.json"
+      - "data/uploads/**/summary.json"
       - "site/**"
       - "scripts/**"
-      - ".github/workflows/ack-ingest.yml"
+      - ".github/workflows/ingest_and_deploy.yml"
   workflow_dispatch:
 
 permissions:
