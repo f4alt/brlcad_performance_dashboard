@@ -1,0 +1,60 @@
+{
+  "generated_at": "2026-05-12T21:10:34Z",
+  "lane_order": [
+    "benchmark",
+    "rtcmp_prims",
+    "rtcmp_generic"
+  ],
+  "lanes": {
+    "benchmark": {
+      "columns": [],
+      "description": "run the BRL-CAD benchmark and capture the VGR",
+      "row_count": 0,
+      "rows": [],
+      "status": "FAIL",
+      "status_raw": "FAIL",
+      "summary_csv": "benchmark/summary.csv"
+    },
+    "rtcmp_generic": {
+      "columns": [],
+      "description": "run rtcmp comparison and performance tests across general models",
+      "row_count": 0,
+      "rows": [],
+      "status": "FAIL",
+      "status_raw": "FAIL",
+      "summary_csv": "rtcmp-generic/summary.csv"
+    },
+    "rtcmp_prims": {
+      "columns": [],
+      "description": "run comparison on all BRL-CAD primitives",
+      "row_count": 0,
+      "rows": [],
+      "status": "FAIL",
+      "status_raw": "FAIL",
+      "summary_csv": "rtcmp-prims/prims_summary.csv"
+    }
+  },
+  "overall_status": "FAIL",
+  "run": {
+    "baseline": "",
+    "branch": "main",
+    "candidate": "",
+    "commit": "b0f375ecd0d6b8f485b039866c4fc1e86b5608ef",
+    "id": "2026-05-12T211034Z-b0f375ecd0d6",
+    "ref": "refs/heads/main",
+    "repository": "f4alt/brlcad",
+    "runner": {
+      "arch": "X64",
+      "name": "GitHub Actions 1000000106",
+      "os": "Linux"
+    },
+    "short_commit": "b0f375ecd0d6",
+    "timestamp": "2026-05-12T21:10:34Z",
+    "workflow": "Performance tests",
+    "workflow_run_attempt": "1",
+    "workflow_run_id": "25762399799",
+    "workflow_run_number": "66",
+    "workflow_url": "https://github.com/f4alt/brlcad/actions/runs/25762399799"
+  },
+  "schema_version": 1
+}
