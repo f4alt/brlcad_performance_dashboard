@@ -1,56 +1,112 @@
-name: Acknowledge performance run
+name: Ingest and deploy dashboard
 
 on:
   push:
     branches: [main]
     paths:
-      - 'data/runs/**/summary.json'
+      - "data/runs/**/summary.json"
+      - "site/**"
+      - "scripts/**"
+      - ".github/workflows/ack-ingest.yml"
   workflow_dispatch:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: brlcad-performance-dashboard
+  cancel-in-progress: false
 
 jobs:
-  acknowledge:
+  ingest-build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout dashboard repo
         uses: actions/checkout@v6
 
-      - name: Validate summaries and update index
+      - name: Validate summaries and update generated dashboard data
         run: python3 scripts/ingest_summary.py
 
-      - name: Write job summary
+      - name: Write ingest summary
         run: |
-          echo '## Performance run acknowledgement' >> "$GITHUB_STEP_SUMMARY"
-          echo '' >> "$GITHUB_STEP_SUMMARY"
+          set -Eeuo pipefail
+
+          echo "## Performance dashboard ingest" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
           python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
           import json
           from pathlib import Path
 
-          status = json.loads(Path('data/status/latest.json').read_text())
-          latest = status.get('latest_run')
-          print(status.get('message', 'No acknowledgement message'))
+          status_path = Path("data/status/latest.json")
+
+          if not status_path.is_file():
+              print("No data/status/latest.json was generated.")
+              raise SystemExit(1)
+
+          status = json.loads(status_path.read_text())
+          latest = status.get("latest_run")
+
+          print(status.get("message", "No acknowledgement message"))
+
           if latest:
-              print('')
+              print("")
               print(f"- Run: `{latest.get('id')}`")
               print(f"- Timestamp: `{latest.get('timestamp')}`")
               print(f"- Status: `{latest.get('status')}`")
               print(f"- Summary: `{latest.get('path')}`")
-              print('- Lanes:')
-              for name, lane_status in latest.get('lanes', {}).items():
+              print("- Lanes:")
+
+              for name, lane_status in latest.get("lanes", {}).items():
                   print(f"  - `{name}`: `{lane_status}`")
           PY
 
       - name: Commit generated dashboard data
         run: |
-          if git diff --quiet -- data/index.json data/status/latest.json data/benchmark; then
+          set -Eeuo pipefail
+
+          git add data/index.json data/status/latest.json data/benchmark
+
+          if git diff --cached --quiet; then
             echo "No generated data changes to commit."
-            exit 0
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+            git commit -m "Update generated dashboard data"
+            git push
           fi
 
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/index.json data/status/latest.json data/benchmark
-          git commit -m "Update performance run index"
-          git push
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Build static site
+        run: |
+          set -Eeuo pipefail
+
+          rm -rf _site
+          mkdir -p _site
+
+          cp -R site/. _site/
+          cp -R data _site/data
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: ingest-build
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
