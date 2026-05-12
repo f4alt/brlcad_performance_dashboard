@@ -1,7 +1,7 @@
 {
-  "schema_version": 1,
-  "generated_at": null,
-  "lane": "benchmark",
+  "generated_at": "2026-05-12T20:43:31.222341Z",
   "labels": [],
+  "lane": "benchmark",
+  "schema_version": 1,
   "series_by_label": {}
 }

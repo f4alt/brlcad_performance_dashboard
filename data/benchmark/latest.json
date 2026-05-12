@@ -1,11 +1,11 @@
 {
-  "schema_version": 1,
-  "generated_at": null,
+  "generated_at": "2026-05-12T20:43:31.222341Z",
   "lane": "benchmark",
-  "latest_run_id": null,
   "latest_benchmark_status": "UNKNOWN",
-  "source_run": null,
-  "stale": false,
+  "latest_run_id": null,
   "message": "No passing benchmark data has been ingested yet.",
-  "rows": []
+  "rows": [],
+  "schema_version": 1,
+  "source_run": null,
+  "stale": false
 }
