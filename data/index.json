@@ -1,58 +1,6 @@
 {
-  "generated_at": "2026-05-12T21:15:03.693247Z",
-  "latest_run": "2026-05-12T211451Z-8f5057c335de",
-  "runs": [
-    {
-      "branch": "main",
-      "commit": "665328f9c8d120502c2a9106eca3b9c988f56e71",
-      "id": "2026-05-12T204659Z-665328f9c8d1",
-      "lanes": {
-        "benchmark": "PASS",
-        "rtcmp_generic": "PASS",
-        "rtcmp_prims": "FAIL"
-      },
-      "path": "data/runs/2026-05-12T204702Z-665328f9c8d1/summary.json",
-      "repository": "f4alt/brlcad",
-      "short_commit": "665328f9c8d1",
-      "status": "FAIL",
-      "timestamp": "2026-05-12T20:46:59Z",
-      "workflow_run_id": "25761118512",
-      "workflow_url": "https://github.com/f4alt/brlcad/actions/runs/25761118512"
-    },
-    {
-      "branch": "main",
-      "commit": "b0f375ecd0d6b8f485b039866c4fc1e86b5608ef",
-      "id": "2026-05-12T211034Z-b0f375ecd0d6",
-      "lanes": {
-        "benchmark": "FAIL",
-        "rtcmp_generic": "FAIL",
-        "rtcmp_prims": "FAIL"
-      },
-      "path": "data/runs/2026-05-12T211037Z-b0f375ecd0d6/summary.json",
-      "repository": "f4alt/brlcad",
-      "short_commit": "b0f375ecd0d6",
-      "status": "FAIL",
-      "timestamp": "2026-05-12T21:10:34Z",
-      "workflow_run_id": "25762399799",
-      "workflow_url": "https://github.com/f4alt/brlcad/actions/runs/25762399799"
-    },
-    {
-      "branch": "main",
-      "commit": "8f5057c335de1519a744a2daa150f6d5ee06e90a",
-      "id": "2026-05-12T211451Z-8f5057c335de",
-      "lanes": {
-        "benchmark": "PASS",
-        "rtcmp_generic": "PASS",
-        "rtcmp_prims": "FAIL"
-      },
-      "path": "data/runs/2026-05-12T211454Z-8f5057c335de/summary.json",
-      "repository": "f4alt/brlcad",
-      "short_commit": "8f5057c335de",
-      "status": "FAIL",
-      "timestamp": "2026-05-12T21:14:51Z",
-      "workflow_run_id": "25762499156",
-      "workflow_url": "https://github.com/f4alt/brlcad/actions/runs/25762499156"
-    }
-  ],
+  "generated_at": "2026-05-12T21:45:10.148841Z",
+  "latest_run": null,
+  "runs": [],
   "schema_version": 1
 }
