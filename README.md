@@ -47,12 +47,3 @@ examples/
   brlcad-publish-to-dashboard.yml # source-repo publishing sketch
 ```
 
-## Auth setup for BRL-CAD -> dashboard pushes
-
-Recommended first pass: create a deploy key with write access on this dashboard repo.
-
-1. Generate an SSH key pair for automation.
-2. Add the public key to this repo under Settings -> Deploy keys -> Allow write access.
-3. Add the private key to the BRL-CAD repo as `PERF_DASHBOARD_DEPLOY_KEY`.
-4. Use the example workflow snippet in `examples/brlcad-publish-to-dashboard.yml` as the publishing step.
-
