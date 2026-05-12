@@ -1,0 +1,451 @@
+{
+  "generated_at": "2026-05-12T20:46:59Z",
+  "lane_order": [
+    "benchmark",
+    "rtcmp_prims",
+    "rtcmp_generic"
+  ],
+  "lanes": {
+    "benchmark": {
+      "columns": [
+        "build",
+        "vgr"
+      ],
+      "description": "run the BRL-CAD benchmark and capture the VGR",
+      "row_count": 2,
+      "rows": [
+        {
+          "build": "BRL-CAD Release 7.42.0",
+          "vgr": 31086
+        },
+        {
+          "build": "BRL-CAD Release 7.42.0",
+          "vgr": 30944
+        }
+      ],
+      "status": "PASS",
+      "status_raw": "PASS",
+      "summary_csv": "benchmark/summary.csv"
+    },
+    "rtcmp_generic": {
+      "columns": [
+        "file",
+        "component",
+        "tag",
+        "status",
+        "bots",
+        "bot_faces",
+        "breps",
+        "brlcad_prims",
+        "num_comp_rays",
+        "compare_status",
+        "comp_status_tol",
+        "perf1_rays_per_sec_wall",
+        "perf2_rays_per_sec_wall",
+        "rays_per_sec_ratio",
+        "perf_delta_percent",
+        "perf_status"
+      ],
+      "description": "run rtcmp comparison and performance tests across general models",
+      "row_count": 9,
+      "rows": [
+        {
+          "bot_faces": 0,
+          "bots": 0,
+          "breps": 0,
+          "brlcad_prims": 15,
+          "comp_status_tol": "1e-15",
+          "compare_status": "PASS",
+          "component": "scene.g",
+          "file": "/home/runner/work/brlcad/brlcad/rtcmp-generic-work/brlcad-baseline/BRL-CAD_7.42.0_Linux_x86_64/share/db/chess/bishop.g",
+          "num_comp_rays": 606,
+          "perf1_rays_per_sec_wall": 584286.45,
+          "perf2_rays_per_sec_wall": 574323.72,
+          "perf_delta_percent": -1.705111,
+          "perf_status": "PASS",
+          "rays_per_sec_ratio": -1.01735,
+          "status": "PASS",
+          "tag": "bishop.g.scene.g"
+        },
+        {
+          "bot_faces": 0,
+          "bots": 0,
+          "breps": 0,
+          "brlcad_prims": 133,
+          "comp_status_tol": "1e-15",
+          "compare_status": "PASS",
+          "component": "b",
+          "file": "/home/runner/work/brlcad/brlcad/rtcmp-generic-work/brlcad-baseline/BRL-CAD_7.42.0_Linux_x86_64/share/db/chess/chessboard.g",
+          "num_comp_rays": 606,
+          "perf1_rays_per_sec_wall": 1035596.9,
+          "perf2_rays_per_sec_wall": 1036377.41,
+          "perf_delta_percent": 0.075368,
+          "perf_status": "PASS",
+          "rays_per_sec_ratio": 1.00075,
+          "status": "PASS",
+          "tag": "chessboard.g.b"
+        },
+        {
+          "bot_faces": 0,
+          "bots": 0,
+          "breps": 0,
+          "brlcad_prims": 22,
+          "comp_status_tol": "1e-15",
+          "compare_status": "PASS",
+          "component": "scene.g",
+          "file": "/home/runner/work/brlcad/brlcad/rtcmp-generic-work/brlcad-baseline/BRL-CAD_7.42.0_Linux_x86_64/share/db/chess/king.g",
+          "num_comp_rays": 606,
+          "perf1_rays_per_sec_wall": 419126.42,
+          "perf2_rays_per_sec_wall": 419182.74,
+          "perf_delta_percent": 0.013437,
+          "perf_status": "PASS",
+          "rays_per_sec_ratio": 1.00013,
+          "status": "PASS",
+          "tag": "king.g.scene.g"
+        },
+        {
+          "bot_faces": 0,
+          "bots": 0,
+          "breps": 0,
+          "brlcad_prims": 50,
+          "comp_status_tol": "1e-15",
+          "compare_status": "PASS",
+          "component": "scene.g",
+          "file": "/home/runner/work/brlcad/brlcad/rtcmp-generic-work/brlcad-baseline/BRL-CAD_7.42.0_Linux_x86_64/share/db/chess/knight.g",
+          "num_comp_rays": 606,
+          "perf1_rays_per_sec_wall": 236719.25,
+          "perf2_rays_per_sec_wall": 233631.08,
+          "perf_delta_percent": -1.304571,
+          "perf_status": "PASS",
+          "rays_per_sec_ratio": -1.01322,
+          "status": "PASS",
+          "tag": "knight.g.scene.g"
+        },
+        {
+          "bot_faces": 0,
+          "bots": 0,
+          "breps": 0,
+          "brlcad_prims": 12,
+          "comp_status_tol": "1e-15",
+          "compare_status": "PASS",
+          "component": "scene.g",
+          "file": "/home/runner/work/brlcad/brlcad/rtcmp-generic-work/brlcad-baseline/BRL-CAD_7.42.0_Linux_x86_64/share/db/chess/pawn.g",
+          "num_comp_rays": 606,
+          "perf1_rays_per_sec_wall": 837079.66,
+          "perf2_rays_per_sec_wall": 828722.89,
+          "perf_delta_percent": -0.998324,
+          "perf_status": "PASS",
+          "rays_per_sec_ratio": -1.01008,
+          "status": "PASS",
+          "tag": "pawn.g.scene.g"
+        },
+        {
+          "bot_faces": 0,
+          "bots": 0,
+          "breps": 0,
+          "brlcad_prims": 18,
+          "comp_status_tol": "1e-15",
+          "compare_status": "PASS",
+          "component": "1_scene.g",
+          "file": "/home/runner/work/brlcad/brlcad/rtcmp-generic-work/brlcad-baseline/BRL-CAD_7.42.0_Linux_x86_64/share/db/chess/pawn.g",
+          "num_comp_rays": 606,
+          "perf1_rays_per_sec_wall": 637161.06,
+          "perf2_rays_per_sec_wall": 639287.9,
+          "perf_delta_percent": 0.333799,
+          "perf_status": "PASS",
+          "rays_per_sec_ratio": 1.00334,
+          "status": "PASS",
+          "tag": "pawn.g.1_scene.g"
+        },
+        {
+          "bot_faces": 0,
+          "bots": 0,
+          "breps": 0,
+          "brlcad_prims": 1,
+          "comp_status_tol": "1e-15",
+          "compare_status": "PASS",
+          "component": "bodyeto.s",
+          "file": "/home/runner/work/brlcad/brlcad/rtcmp-generic-work/brlcad-baseline/BRL-CAD_7.42.0_Linux_x86_64/share/db/chess/pawn.g",
+          "num_comp_rays": 606,
+          "perf1_rays_per_sec_wall": 2226602.36,
+          "perf2_rays_per_sec_wall": 2225735.71,
+          "perf_delta_percent": -0.038923,
+          "perf_status": "PASS",
+          "rays_per_sec_ratio": -1.00039,
+          "status": "PASS",
+          "tag": "pawn.g.bodyeto.s"
+        },
+        {
+          "bot_faces": 0,
+          "bots": 0,
+          "breps": 0,
+          "brlcad_prims": 33,
+          "comp_status_tol": "1e-15",
+          "compare_status": "PASS",
+          "component": "scene.g",
+          "file": "/home/runner/work/brlcad/brlcad/rtcmp-generic-work/brlcad-baseline/BRL-CAD_7.42.0_Linux_x86_64/share/db/chess/queen.g",
+          "num_comp_rays": 606,
+          "perf1_rays_per_sec_wall": 421302.86,
+          "perf2_rays_per_sec_wall": 423043.85,
+          "perf_delta_percent": 0.41324,
+          "perf_status": "PASS",
+          "rays_per_sec_ratio": 1.00413,
+          "status": "PASS",
+          "tag": "queen.g.scene.g"
+        },
+        {
+          "bot_faces": 0,
+          "bots": 0,
+          "breps": 0,
+          "brlcad_prims": 18,
+          "comp_status_tol": "1e-15",
+          "compare_status": "PASS",
+          "component": "scene.g",
+          "file": "/home/runner/work/brlcad/brlcad/rtcmp-generic-work/brlcad-baseline/BRL-CAD_7.42.0_Linux_x86_64/share/db/chess/rook.g",
+          "num_comp_rays": 606,
+          "perf1_rays_per_sec_wall": 642194.65,
+          "perf2_rays_per_sec_wall": 638739.51,
+          "perf_delta_percent": -0.538021,
+          "perf_status": "PASS",
+          "rays_per_sec_ratio": -1.00541,
+          "status": "PASS",
+          "tag": "rook.g.scene.g"
+        }
+      ],
+      "status": "PASS",
+      "status_raw": "PASS",
+      "summary_csv": "rtcmp-generic/summary.csv"
+    },
+    "rtcmp_prims": {
+      "columns": [
+        "prim",
+        "rays_per_sec"
+      ],
+      "description": "run comparison on all BRL-CAD primitives",
+      "row_count": 39,
+      "rows": [
+        {
+          "prim": "grip",
+          "rays_per_sec": 15457700.06,
+          "status": "PASS"
+        },
+        {
+          "prim": "arb4",
+          "rays_per_sec": 8082212.72,
+          "status": "PASS"
+        },
+        {
+          "prim": "arb7",
+          "rays_per_sec": 6512714.49,
+          "status": "PASS"
+        },
+        {
+          "prim": "sph",
+          "rays_per_sec": 6327609.49,
+          "status": "PASS"
+        },
+        {
+          "prim": "arb6",
+          "rays_per_sec": 5941127.0,
+          "status": "PASS"
+        },
+        {
+          "prim": "rpp",
+          "rays_per_sec": 5772830.77,
+          "status": "PASS"
+        },
+        {
+          "prim": "box",
+          "rays_per_sec": 5758320.91,
+          "status": "PASS"
+        },
+        {
+          "prim": "3ptarb",
+          "rays_per_sec": 5724243.83,
+          "status": "PASS"
+        },
+        {
+          "prim": "raw",
+          "rays_per_sec": 5720821.51,
+          "status": "PASS"
+        },
+        {
+          "prim": "arb5",
+          "rays_per_sec": 5709940.74,
+          "status": "PASS"
+        },
+        {
+          "prim": "arbn",
+          "rays_per_sec": 5549056.16,
+          "status": "PASS"
+        },
+        {
+          "prim": "ell",
+          "rays_per_sec": 5332081.25,
+          "status": "PASS"
+        },
+        {
+          "prim": "ell1",
+          "rays_per_sec": 5330205.16,
+          "status": "PASS"
+        },
+        {
+          "prim": "ellg",
+          "rays_per_sec": 5310200.0,
+          "status": "PASS"
+        },
+        {
+          "prim": "rpc",
+          "rays_per_sec": 5053291.34,
+          "status": "PASS"
+        },
+        {
+          "prim": "ehy",
+          "rays_per_sec": 4842921.37,
+          "status": "PASS"
+        },
+        {
+          "prim": "rhc",
+          "rays_per_sec": 4805111.11,
+          "status": "PASS"
+        },
+        {
+          "prim": "part",
+          "rays_per_sec": 4718513.02,
+          "status": "PASS"
+        },
+        {
+          "prim": "epa",
+          "rays_per_sec": 4548611.94,
+          "status": "PASS"
+        },
+        {
+          "prim": "rec",
+          "rays_per_sec": 4366151.97,
+          "status": "PASS"
+        },
+        {
+          "prim": "rcc",
+          "rays_per_sec": 4162292.8,
+          "status": "PASS"
+        },
+        {
+          "prim": "trc",
+          "rays_per_sec": 4161715.83,
+          "status": "PASS"
+        },
+        {
+          "prim": "tec",
+          "rays_per_sec": 4158662.21,
+          "status": "PASS"
+        },
+        {
+          "prim": "arb8",
+          "rays_per_sec": 3661485.18,
+          "status": "PASS"
+        },
+        {
+          "prim": "pipe",
+          "rays_per_sec": 3075541.34,
+          "status": "PASS"
+        },
+        {
+          "prim": "tgc",
+          "rays_per_sec": 2889904.82,
+          "status": "PASS"
+        },
+        {
+          "prim": "tor",
+          "rays_per_sec": 2244832.71,
+          "status": "PASS"
+        },
+        {
+          "prim": "extrude",
+          "rays_per_sec": 1773683.1,
+          "status": "PASS"
+        },
+        {
+          "prim": "eto",
+          "rays_per_sec": 1422009.2,
+          "status": "PASS"
+        },
+        {
+          "prim": "bot",
+          "rays_per_sec": 929011.51,
+          "status": "PASS"
+        },
+        {
+          "prim": "metaball",
+          "rays_per_sec": 924011.14,
+          "status": "PASS"
+        },
+        {
+          "prim": "half",
+          "rays_per_sec": 846611.92,
+          "status": "PASS"
+        },
+        {
+          "prim": "1647260.s",
+          "rays_per_sec": 746797.43,
+          "status": "PASS"
+        },
+        {
+          "prim": "vol",
+          "rays_per_sec": 526708.5,
+          "status": "PASS"
+        },
+        {
+          "prim": "ars",
+          "rays_per_sec": 448983.46,
+          "status": "PASS"
+        },
+        {
+          "prim": "revolve",
+          "rays_per_sec": 378430.89,
+          "status": "PASS"
+        },
+        {
+          "prim": "ebm",
+          "rays_per_sec": 104429.2,
+          "status": "PASS"
+        },
+        {
+          "prim": "brep",
+          "rays_per_sec": 14440.78,
+          "status": "PASS"
+        },
+        {
+          "prim": "submodel",
+          "rays_per_sec": null,
+          "status": "FAIL"
+        }
+      ],
+      "status": "FAIL",
+      "status_raw": "FAIL",
+      "summary_csv": "rtcmp-prims/prims_summary.csv"
+    }
+  },
+  "overall_status": "FAIL",
+  "run": {
+    "baseline": "",
+    "branch": "main",
+    "candidate": "",
+    "commit": "665328f9c8d120502c2a9106eca3b9c988f56e71",
+    "id": "2026-05-12T204659Z-665328f9c8d1",
+    "ref": "refs/heads/main",
+    "repository": "f4alt/brlcad",
+    "runner": {
+      "arch": "X64",
+      "name": "GitHub Actions 1000000097",
+      "os": "Linux"
+    },
+    "short_commit": "665328f9c8d1",
+    "timestamp": "2026-05-12T20:46:59Z",
+    "workflow": "Performance tests",
+    "workflow_run_attempt": "1",
+    "workflow_run_id": "25761118512",
+    "workflow_run_number": "65",
+    "workflow_url": "https://github.com/f4alt/brlcad/actions/runs/25761118512"
+  },
+  "schema_version": 1
+}
