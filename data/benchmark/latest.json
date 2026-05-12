@@ -1,9 +1,9 @@
 {
-  "generated_at": "2026-05-12T21:05:57.913431Z",
+  "generated_at": "2026-05-12T21:10:52.800424Z",
   "lane": "benchmark",
-  "latest_benchmark_status": "PASS",
-  "latest_run_id": "2026-05-12T204659Z-665328f9c8d1",
-  "message": "Showing latest passing benchmark data.",
+  "latest_benchmark_status": "FAIL",
+  "latest_run_id": "2026-05-12T211034Z-b0f375ecd0d6",
+  "message": "Latest benchmark run did not pass; showing the most recent passing benchmark data.",
   "rows": [
     {
       "build": "BRL-CAD Release 7.42.0",
@@ -42,5 +42,5 @@
     "workflow_run_id": "25761118512",
     "workflow_url": "https://github.com/f4alt/brlcad/actions/runs/25761118512"
   },
-  "stale": false
+  "stale": true
 }
