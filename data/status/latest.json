@@ -1,6 +1,19 @@
 {
-  "schema_version": 1,
-  "acknowledged_at": null,
-  "latest_run": null,
-  "message": "No run summaries found"
+  "acknowledged_at": "2026-05-12T20:22:03.931628Z",
+  "latest_run": {
+    "branch": null,
+    "commit": null,
+    "id": "2026-05-12T193206Z-2422d88063f5",
+    "lanes": {
+      "benchmark": "PASS",
+      "rtcmp_generic": "PASS",
+      "rtcmp_prims": "FAIL"
+    },
+    "path": "data/runs/2026-05-12T193206Z-2422d88063f5/summary.json",
+    "status": "FAIL",
+    "timestamp": "2026-05-12T20:22:03.864391Z",
+    "workflow_run_id": null
+  },
+  "message": "Acknowledged performance run 2026-05-12T193206Z-2422d88063f5",
+  "schema_version": 1
 }
