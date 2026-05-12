@@ -1,0 +1,56 @@
+name: Acknowledge performance run
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'data/runs/**/summary.json'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  acknowledge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout dashboard repo
+        uses: actions/checkout@v6
+
+      - name: Validate summaries and update index
+        run: python3 scripts/ingest_summary.py
+
+      - name: Write job summary
+        run: |
+          echo '## Performance run acknowledgement' >> "$GITHUB_STEP_SUMMARY"
+          echo '' >> "$GITHUB_STEP_SUMMARY"
+          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          from pathlib import Path
+
+          status = json.loads(Path('data/status/latest.json').read_text())
+          latest = status.get('latest_run')
+          print(status.get('message', 'No acknowledgement message'))
+          if latest:
+              print('')
+              print(f"- Run: `{latest.get('id')}`")
+              print(f"- Timestamp: `{latest.get('timestamp')}`")
+              print(f"- Status: `{latest.get('status')}`")
+              print(f"- Summary: `{latest.get('path')}`")
+              print('- Lanes:')
+              for name, lane_status in latest.get('lanes', {}).items():
+                  print(f"  - `{name}`: `{lane_status}`")
+          PY
+
+      - name: Commit generated dashboard data
+        run: |
+          if git diff --quiet -- data/index.json data/status/latest.json; then
+            echo "No generated data changes to commit."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/index.json data/status/latest.json
+          git commit -m "Update performance run index"
+          git push
