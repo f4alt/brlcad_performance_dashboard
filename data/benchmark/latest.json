@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "generated_at": null,
+  "lane": "benchmark",
+  "latest_run_id": null,
+  "latest_benchmark_status": "UNKNOWN",
+  "source_run": null,
+  "stale": false,
+  "message": "No passing benchmark data has been ingested yet.",
+  "rows": []
+}

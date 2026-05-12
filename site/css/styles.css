@@ -1,0 +1,240 @@
+:root {
+  color-scheme: light dark;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --border: color-mix(in srgb, currentColor 18%, transparent);
+  --muted: color-mix(in srgb, currentColor 62%, transparent);
+  --soft: color-mix(in srgb, currentColor 8%, transparent);
+  --softer: color-mix(in srgb, currentColor 4%, transparent);
+  --pass: #2e7d32;
+  --fail: #c62828;
+  --warn: #ef6c00;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 2rem;
+  line-height: 1.5;
+  background: canvas;
+  color: canvastext;
+}
+
+main {
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+h1, h2, h3, p {
+  margin-top: 0;
+}
+
+h1 {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  line-height: 1.05;
+  margin-bottom: 0;
+}
+
+h2 {
+  margin-bottom: 0.65rem;
+}
+
+h3 {
+  margin-bottom: 0.35rem;
+}
+
+code {
+  background: var(--soft);
+  border-radius: 6px;
+  padding: 0.1rem 0.3rem;
+}
+
+.page-header,
+.section-heading,
+.chart-controls {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.page-header {
+  margin-bottom: 1.25rem;
+}
+
+.eyebrow {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  margin-bottom: 0.25rem;
+  text-transform: uppercase;
+}
+
+.card {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1rem 1.25rem;
+  margin: 1rem 0;
+  background: var(--softer);
+}
+
+.lane-card {
+  padding: 1.25rem;
+}
+
+.subsection {
+  margin-top: 1.25rem;
+}
+
+.header-status,
+.lane-status,
+.badge {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.25rem 0.65rem;
+  white-space: nowrap;
+  font-weight: 700;
+}
+
+.notice {
+  border-left: 4px solid var(--border);
+  background: var(--soft);
+  border-radius: 10px;
+  margin-top: 1rem;
+  padding: 0.75rem 0.9rem;
+}
+
+.notice.warn {
+  border-left-color: var(--warn);
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.status-PASS {
+  color: var(--pass);
+}
+
+.status-FAIL {
+  color: var(--fail);
+}
+
+.status-SKIP,
+.status-UNKNOWN,
+.status-WARN {
+  color: var(--warn);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.75rem;
+}
+
+th, td {
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  padding: 0.5rem;
+  vertical-align: top;
+}
+
+th {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+select {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.45rem 0.65rem;
+  min-width: 18rem;
+  background: canvas;
+  color: canvastext;
+}
+
+label {
+  display: grid;
+  gap: 0.3rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.chart-box {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  margin-top: 0.8rem;
+  min-height: 340px;
+  overflow-x: auto;
+  padding: 0.5rem;
+  background: color-mix(in srgb, canvas 94%, currentColor 6%);
+}
+
+.chart-empty {
+  padding: 2rem;
+  color: var(--muted);
+}
+
+svg.chart {
+  display: block;
+  min-width: 680px;
+  width: 100%;
+  height: 340px;
+}
+
+.chart-axis,
+.chart-grid {
+  stroke: color-mix(in srgb, currentColor 28%, transparent);
+  stroke-width: 1;
+}
+
+.chart-grid {
+  stroke-dasharray: 3 5;
+}
+
+.chart-line {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.5;
+}
+
+.chart-point {
+  fill: canvas;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
+.chart-point:hover {
+  stroke-width: 4;
+}
+
+.chart-label {
+  fill: currentColor;
+  font-size: 11px;
+}
+
+@media (max-width: 760px) {
+  body {
+    padding: 1rem;
+  }
+
+  .page-header,
+  .section-heading,
+  .chart-controls {
+    display: block;
+  }
+
+  .header-status,
+  .lane-status {
+    display: inline-block;
+    margin-top: 0.75rem;
+  }
+
+  select {
+    min-width: 100%;
+  }
+}

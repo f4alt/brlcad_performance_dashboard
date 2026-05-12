@@ -33,17 +33,43 @@ Only `summary.json` is required by the dashboard. The raw CSVs and logs are reta
   deploy-pages.yml     # publishes the static GitHub Pages site
 
 scripts/
-  ingest_summary.py    # simple validator/index generator
+  ingest_summary.py    # validates summaries, builds global index, runs lane processors
+  lane_processors/     # one module per dashboard lane; benchmark is implemented first
 
 site/
   index.html           # placeholder static dashboard
 
 data/
-  index.json           # generated run index
-  status/latest.json   # generated latest-run acknowledgement
-  runs/<run-id>/       # immutable run packages committed by BRL-CAD workflow
+  index.json              # generated run index
+  status/latest.json      # generated latest-run acknowledgement
+  benchmark/latest.json   # generated latest passing benchmark comparison
+  benchmark/series.json   # generated VGR history keyed by build label
+  runs/<run-id>/          # immutable run packages committed by BRL-CAD workflow
 
 examples/
   brlcad-publish-to-dashboard.yml # source-repo publishing sketch
 ```
 
+## Auth setup for BRL-CAD -> dashboard pushes
+
+Recommended first pass: create a deploy key with write access on this dashboard repo.
+
+1. Generate an SSH key pair for automation.
+2. Add the public key to this repo under Settings -> Deploy keys -> Allow write access.
+3. Add the private key to the BRL-CAD repo as `PERF_DASHBOARD_DEPLOY_KEY`.
+4. Use the example workflow snippet in `examples/brlcad-publish-to-dashboard.yml` as the publishing step.
+
+
+## Lane processor pattern
+
+Each lane should own its own processor under `scripts/lane_processors/` and write its own derived files under `data/<lane>/`. The main ingest script only loads run summaries, builds the global index, and calls registered processors. This keeps benchmark, primitive, and generic dashboard logic isolated from one another.
+
+Implemented first:
+
+```text
+scripts/lane_processors/benchmark.py
+data/benchmark/latest.json
+data/benchmark/series.json
+```
+
+The benchmark processor keeps the latest passing benchmark values visible. If the newest run has a failed benchmark lane, `data/benchmark/latest.json` stays pinned to the most recent passing benchmark run and marks the data as stale.

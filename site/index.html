@@ -4,107 +4,60 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>BRL-CAD Performance Dashboard</title>
-  <style>
-    :root {
-      color-scheme: light dark;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    }
-    body {
-      margin: 0;
-      padding: 2rem;
-      line-height: 1.5;
-    }
-    main {
-      max-width: 960px;
-      margin: 0 auto;
-    }
-    .card {
-      border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
-      border-radius: 14px;
-      padding: 1rem 1.25rem;
-      margin: 1rem 0;
-    }
-    code {
-      background: color-mix(in srgb, currentColor 10%, transparent);
-      border-radius: 6px;
-      padding: 0.1rem 0.3rem;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 1rem;
-    }
-    th, td {
-      text-align: left;
-      border-bottom: 1px solid color-mix(in srgb, currentColor 18%, transparent);
-      padding: 0.45rem;
-    }
-    .status-PASS { color: #2e7d32; }
-    .status-FAIL { color: #c62828; }
-    .status-SKIP, .status-UNKNOWN { color: #ef6c00; }
-  </style>
+  <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
   <main>
-    <h1>BRL-CAD Performance Dashboard</h1>
-    <p>This is the initial wiring page. It reads <code>data/index.json</code> and reports the latest acknowledged performance run.</p>
+    <header class="page-header">
+      <div>
+        <p class="eyebrow">BRL-CAD</p>
+        <h1>Performance Dashboard</h1>
+      </div>
+      <div class="header-status" id="global-status">Loading…</div>
+    </header>
 
-    <section class="card" id="latest">Loading latest run…</section>
+    <section class="card" id="latest-run">
+      <h2>Latest run</h2>
+      <p>Loading latest run…</p>
+    </section>
+
+    <section class="card lane-card" id="benchmark-lane">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Lane 1</p>
+          <h2>Benchmark data</h2>
+        </div>
+        <div class="lane-status" id="benchmark-status">Loading…</div>
+      </div>
+
+      <div id="benchmark-message" class="notice">Loading benchmark data…</div>
+
+      <div class="subsection">
+        <h3>Latest passing values</h3>
+        <div id="benchmark-latest-table">Loading…</div>
+      </div>
+
+      <div class="subsection">
+        <div class="chart-controls">
+          <div>
+            <h3>Value over time</h3>
+            <p class="muted">Select a build label to view all ingested VGR values for that label.</p>
+          </div>
+          <label>
+            Build label
+            <select id="benchmark-label-select"></select>
+          </label>
+        </div>
+        <div id="benchmark-chart" class="chart-box">Loading chart…</div>
+      </div>
+    </section>
+
     <section class="card">
       <h2>Recent runs</h2>
-      <div id="runs">Loading run index…</div>
+      <div id="runs-table">Loading run index…</div>
     </section>
   </main>
 
-  <script>
-    const fmt = (value) => value == null || value === '' ? '—' : String(value);
-    const statusClass = (status) => `status-${status || 'UNKNOWN'}`;
-
-    async function loadDashboard() {
-      const response = await fetch('data/index.json', { cache: 'no-store' });
-      if (!response.ok) {
-        throw new Error(`Could not load data/index.json: ${response.status}`);
-      }
-      const index = await response.json();
-      const runs = index.runs || [];
-      const latest = runs[runs.length - 1];
-
-      const latestEl = document.getElementById('latest');
-      if (!latest) {
-        latestEl.innerHTML = '<h2>No performance runs yet</h2><p>Waiting for the first <code>summary.json</code> package.</p>';
-      } else {
-        const lanes = Object.entries(latest.lanes || {})
-          .map(([name, status]) => `<li><code>${name}</code>: <strong class="${statusClass(status)}">${status}</strong></li>`)
-          .join('');
-        latestEl.innerHTML = `
-          <h2>Latest run</h2>
-          <p><strong class="${statusClass(latest.status)}">${latest.status}</strong> — <code>${latest.id}</code></p>
-          <p>Timestamp: <code>${fmt(latest.timestamp)}</code></p>
-          <p>Commit: <code>${fmt(latest.commit)}</code></p>
-          <p>Summary: <code>${fmt(latest.path)}</code></p>
-          <ul>${lanes}</ul>
-        `;
-      }
-
-      const rows = runs.slice(-25).reverse().map((run) => `
-        <tr>
-          <td><code>${run.id}</code></td>
-          <td>${fmt(run.timestamp)}</td>
-          <td><strong class="${statusClass(run.status)}">${run.status}</strong></td>
-          <td><code>${fmt(run.commit)}</code></td>
-        </tr>
-      `).join('');
-
-      document.getElementById('runs').innerHTML = rows
-        ? `<table><thead><tr><th>Run</th><th>Timestamp</th><th>Status</th><th>Commit</th></tr></thead><tbody>${rows}</tbody></table>`
-        : '<p>No runs indexed yet.</p>';
-    }
-
-    loadDashboard().catch((error) => {
-      document.getElementById('latest').innerHTML = `<h2>Dashboard load failed</h2><p>${error.message}</p>`;
-      document.getElementById('runs').innerHTML = '<p>No run data loaded.</p>';
-      console.error(error);
-    });
-  </script>
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>
