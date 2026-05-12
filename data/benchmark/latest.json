@@ -1,11 +1,46 @@
 {
-  "generated_at": "2026-05-12T20:43:31.222341Z",
+  "generated_at": "2026-05-12T20:47:09.472142Z",
   "lane": "benchmark",
-  "latest_benchmark_status": "UNKNOWN",
-  "latest_run_id": null,
-  "message": "No passing benchmark data has been ingested yet.",
-  "rows": [],
+  "latest_benchmark_status": "PASS",
+  "latest_run_id": "2026-05-12T204659Z-665328f9c8d1",
+  "message": "Showing latest passing benchmark data.",
+  "rows": [
+    {
+      "build": "BRL-CAD Release 7.42.0",
+      "commit": "665328f9c8d120502c2a9106eca3b9c988f56e71",
+      "run_id": "2026-05-12T204659Z-665328f9c8d1",
+      "short_commit": "665328f9c8d1",
+      "summary_path": "data/runs/2026-05-12T204702Z-665328f9c8d1/summary.json",
+      "timestamp": "2026-05-12T20:46:59Z",
+      "vgr": 31086.0
+    },
+    {
+      "build": "BRL-CAD Release 7.42.0",
+      "commit": "665328f9c8d120502c2a9106eca3b9c988f56e71",
+      "run_id": "2026-05-12T204659Z-665328f9c8d1",
+      "short_commit": "665328f9c8d1",
+      "summary_path": "data/runs/2026-05-12T204702Z-665328f9c8d1/summary.json",
+      "timestamp": "2026-05-12T20:46:59Z",
+      "vgr": 30944.0
+    }
+  ],
   "schema_version": 1,
-  "source_run": null,
+  "source_run": {
+    "branch": "main",
+    "commit": "665328f9c8d120502c2a9106eca3b9c988f56e71",
+    "id": "2026-05-12T204659Z-665328f9c8d1",
+    "lanes": {
+      "benchmark": "PASS",
+      "rtcmp_generic": "PASS",
+      "rtcmp_prims": "FAIL"
+    },
+    "path": "data/runs/2026-05-12T204702Z-665328f9c8d1/summary.json",
+    "repository": "f4alt/brlcad",
+    "short_commit": "665328f9c8d1",
+    "status": "FAIL",
+    "timestamp": "2026-05-12T20:46:59Z",
+    "workflow_run_id": "25761118512",
+    "workflow_url": "https://github.com/f4alt/brlcad/actions/runs/25761118512"
+  },
   "stale": false
 }
