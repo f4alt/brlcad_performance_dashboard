@@ -25,7 +25,7 @@ jobs:
 
     steps:
       - name: Checkout dashboard repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Validate summaries and update generated dashboard data
         run: python3 scripts/ingest_summary.py
@@ -41,34 +41,70 @@ jobs:
           import json
           from pathlib import Path
 
-          status_path = Path("data/status/latest.json")
+          index_path = Path("data/index.json")
 
-          if not status_path.is_file():
-              print("No data/status/latest.json was generated.")
+          if not index_path.is_file():
+              print("No data/index.json was generated.")
               raise SystemExit(1)
 
-          status = json.loads(status_path.read_text())
-          latest = status.get("latest_run")
+          index = json.loads(index_path.read_text(encoding="utf-8"))
+          latest = index.get("latest_upload")
 
-          print(status.get("message", "No acknowledgement message"))
+          if not latest:
+              print("No uploaded summaries found.")
+              raise SystemExit(0)
 
-          if latest:
+          print(f"Acknowledged performance upload `{latest.get('id')}`")
+          print("")
+          print(f"- Timestamp: `{latest.get('timestamp')}`")
+          print(f"- Status: `{latest.get('status')}`")
+          print(f"- Summary: `{latest.get('path')}`")
+          print(f"- Package: `{latest.get('package_path')}`")
+
+          workflow_url = latest.get("workflow_url")
+          if workflow_url:
+              print(f"- Source workflow: {workflow_url}")
+
+          commit = latest.get("commit")
+          short_commit = latest.get("short_commit") or (commit[:12] if commit else "")
+          repository = latest.get("repository")
+          if repository and commit:
+              print(f"- Commit: https://github.com/{repository}/commit/{commit}")
+          elif short_commit:
+              print(f"- Commit: `{short_commit}`")
+
+          lanes = latest.get("lanes") or {}
+          if lanes:
               print("")
-              print(f"- Run: `{latest.get('id')}`")
-              print(f"- Timestamp: `{latest.get('timestamp')}`")
-              print(f"- Status: `{latest.get('status')}`")
-              print(f"- Summary: `{latest.get('path')}`")
-              print("- Lanes:")
-
-              for name, lane_status in latest.get("lanes", {}).items():
-                  print(f"  - `{name}`: `{lane_status}`")
+              print("Lanes:")
+              for name, lane_status in lanes.items():
+                  print(f"- `{name}`: `{lane_status}`")
           PY
 
       - name: Commit generated dashboard data
         run: |
           set -Eeuo pipefail
 
-          git add data/index.json data/status/latest.json data/benchmark
+          paths=(
+            "data/index.json"
+            "data/benchmark"
+            "data/rtcmp_prims"
+            "data/rtcmp_generic"
+          )
+
+          existing_paths=()
+          for path in "${paths[@]}"; do
+            if [ -e "$path" ]; then
+              existing_paths+=("$path")
+            fi
+          done
+
+          if [ "${#existing_paths[@]}" -eq 0 ]; then
+            echo "No generated dashboard paths exist to stage."
+            exit 0
+          fi
+
+          git add "${existing_paths[@]}"
 
           if git diff --cached --quiet; then
             echo "No generated data changes to commit."
