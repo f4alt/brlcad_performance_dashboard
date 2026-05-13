@@ -1,24 +1,24 @@
 {
-  "generated_at": "2026-05-13T03:46:48Z",
+  "generated_at": "2026-05-13T05:23:47Z",
   "latest_upload": {
     "branch": "main",
-    "commit": "709288a756bc75aba09e46eb5f5243562626ae13",
-    "id": "2026-05-12T215755Z-709288a756bc",
+    "commit": "2b4be251e6fc93c1bd5274a8e80c2101de836eac",
+    "id": "2026-05-13T052333Z-2b4be251e6fc",
     "lanes": {
       "benchmark": "PASS",
       "rtcmp_generic": "PASS",
       "rtcmp_prims": "FAIL"
     },
-    "package_path": "data/uploads/2026-05-12T215758Z-709288a756bc",
-    "path": "data/uploads/2026-05-12T215758Z-709288a756bc/summary.json",
+    "package_path": "data/uploads/2026-05-13T052339Z-2b4be251e6fc",
+    "path": "data/uploads/2026-05-13T052339Z-2b4be251e6fc/summary.json",
     "ref": "refs/heads/main",
     "repository": "f4alt/brlcad",
-    "short_commit": "709288a756bc",
+    "short_commit": "2b4be251e6fc",
     "status": "FAIL",
-    "timestamp": "2026-05-12T21:57:55Z",
+    "timestamp": "2026-05-13T05:23:33Z",
     "workflow": "Performance tests",
-    "workflow_run_id": "25764518054",
-    "workflow_url": "https://github.com/f4alt/brlcad/actions/runs/25764518054"
+    "workflow_run_id": "25777273190",
+    "workflow_url": "https://github.com/f4alt/brlcad/actions/runs/25777273190"
   },
   "schema_version": 1,
   "uploads": [
@@ -41,6 +41,26 @@
       "workflow": "Performance tests",
       "workflow_run_id": "25764518054",
       "workflow_url": "https://github.com/f4alt/brlcad/actions/runs/25764518054"
+    },
+    {
+      "branch": "main",
+      "commit": "2b4be251e6fc93c1bd5274a8e80c2101de836eac",
+      "id": "2026-05-13T052333Z-2b4be251e6fc",
+      "lanes": {
+        "benchmark": "PASS",
+        "rtcmp_generic": "PASS",
+        "rtcmp_prims": "FAIL"
+      },
+      "package_path": "data/uploads/2026-05-13T052339Z-2b4be251e6fc",
+      "path": "data/uploads/2026-05-13T052339Z-2b4be251e6fc/summary.json",
+      "ref": "refs/heads/main",
+      "repository": "f4alt/brlcad",
+      "short_commit": "2b4be251e6fc",
+      "status": "FAIL",
+      "timestamp": "2026-05-13T05:23:33Z",
+      "workflow": "Performance tests",
+      "workflow_run_id": "25777273190",
+      "workflow_url": "https://github.com/f4alt/brlcad/actions/runs/25777273190"
     }
   ]
 }
