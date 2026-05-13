@@ -1,6 +1,22 @@
 {
-  "acknowledged_at": "2026-05-12T21:45:10.148841Z",
-  "latest_run": null,
-  "message": "No run summaries found",
+  "acknowledged_at": "2026-05-13T00:25:30.725895Z",
+  "latest_run": {
+    "branch": "main",
+    "commit": "709288a756bc75aba09e46eb5f5243562626ae13",
+    "id": "2026-05-12T215755Z-709288a756bc",
+    "lanes": {
+      "benchmark": "PASS",
+      "rtcmp_generic": "PASS",
+      "rtcmp_prims": "FAIL"
+    },
+    "path": "data/uploads/2026-05-12T215758Z-709288a756bc/summary.json",
+    "repository": "f4alt/brlcad",
+    "short_commit": "709288a756bc",
+    "status": "FAIL",
+    "timestamp": "2026-05-12T21:57:55Z",
+    "workflow_run_id": "25764518054",
+    "workflow_url": "https://github.com/f4alt/brlcad/actions/runs/25764518054"
+  },
+  "message": "Acknowledged performance run 2026-05-12T215755Z-709288a756bc",
   "schema_version": 1
 }
