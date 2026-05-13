@@ -1,7 +1,27 @@
 {
-  "generated_at": "2026-05-13T00:25:30.725895Z",
-  "latest_run": "2026-05-12T215755Z-709288a756bc",
-  "runs": [
+  "generated_at": "2026-05-13T03:46:48Z",
+  "latest_upload": {
+    "branch": "main",
+    "commit": "709288a756bc75aba09e46eb5f5243562626ae13",
+    "id": "2026-05-12T215755Z-709288a756bc",
+    "lanes": {
+      "benchmark": "PASS",
+      "rtcmp_generic": "PASS",
+      "rtcmp_prims": "FAIL"
+    },
+    "package_path": "data/uploads/2026-05-12T215758Z-709288a756bc",
+    "path": "data/uploads/2026-05-12T215758Z-709288a756bc/summary.json",
+    "ref": "refs/heads/main",
+    "repository": "f4alt/brlcad",
+    "short_commit": "709288a756bc",
+    "status": "FAIL",
+    "timestamp": "2026-05-12T21:57:55Z",
+    "workflow": "Performance tests",
+    "workflow_run_id": "25764518054",
+    "workflow_url": "https://github.com/f4alt/brlcad/actions/runs/25764518054"
+  },
+  "schema_version": 1,
+  "uploads": [
     {
       "branch": "main",
       "commit": "709288a756bc75aba09e46eb5f5243562626ae13",
@@ -11,14 +31,16 @@
         "rtcmp_generic": "PASS",
         "rtcmp_prims": "FAIL"
       },
+      "package_path": "data/uploads/2026-05-12T215758Z-709288a756bc",
       "path": "data/uploads/2026-05-12T215758Z-709288a756bc/summary.json",
+      "ref": "refs/heads/main",
       "repository": "f4alt/brlcad",
       "short_commit": "709288a756bc",
       "status": "FAIL",
       "timestamp": "2026-05-12T21:57:55Z",
+      "workflow": "Performance tests",
       "workflow_run_id": "25764518054",
       "workflow_url": "https://github.com/f4alt/brlcad/actions/runs/25764518054"
     }
-  ],
-  "schema_version": 1
+  ]
 }

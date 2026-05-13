@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-13T00:25:30.725895Z",
+  "generated_at": "2026-05-13T03:46:48Z",
   "labels": [
     "BRL-CAD Release 7.42.0",
     "BRL-CAD Release 7.40.2"
@@ -11,6 +11,8 @@
       {
         "build": "BRL-CAD Release 7.40.2",
         "commit": "709288a756bc75aba09e46eb5f5243562626ae13",
+        "package_path": "data/uploads/2026-05-12T215758Z-709288a756bc",
+        "row_key": "BRL-CAD Release 7.40.2",
         "run_id": "2026-05-12T215755Z-709288a756bc",
         "short_commit": "709288a756bc",
         "summary_path": "data/uploads/2026-05-12T215758Z-709288a756bc/summary.json",
@@ -22,6 +24,8 @@
       {
         "build": "BRL-CAD Release 7.42.0",
         "commit": "709288a756bc75aba09e46eb5f5243562626ae13",
+        "package_path": "data/uploads/2026-05-12T215758Z-709288a756bc",
+        "row_key": "BRL-CAD Release 7.42.0",
         "run_id": "2026-05-12T215755Z-709288a756bc",
         "short_commit": "709288a756bc",
         "summary_path": "data/uploads/2026-05-12T215758Z-709288a756bc/summary.json",
