@@ -1,60 +1,80 @@
-import { initBenchmarkSection } from './benchmark.js';
-import { escapeHtml, fetchJson, fmt, formatTimestamp, statusClass } from './utils.js';
+import { initBenchmarkSection } from './lanes/benchmark.js';
+import { initRtcmpGenericSection } from './lanes/rtcmp_generic.js';
+import { initRtcmpPrimsSection } from './lanes/rtcmp_prims.js';
+import { commitHref, escapeHtml, fetchJson, formatTimestamp, setStatus, uploadSummaryHref } from './utils.js';
 
-function renderLatestRun(latest) {
-  const el = document.getElementById('latest-run');
-  const globalStatus = document.getElementById('global-status');
+function renderLatestUpload(latest) {
+  const el = document.getElementById('latest-upload');
 
   if (!latest) {
-    globalStatus.textContent = 'No runs';
-    el.innerHTML = '<h2>Latest run</h2><p>Waiting for the first <code>summary.json</code> package.</p>';
+    el.innerHTML = `
+      <div>
+        <p class="eyebrow">Latest upload</p>
+        <strong>No uploads yet</strong>
+      </div>
+      <div class="muted">Waiting for the first <code>summary.json</code> package.</div>
+    `;
     return;
   }
 
-  globalStatus.innerHTML = `<span class="${statusClass(latest.status)}">${escapeHtml(latest.status)}</span>`;
-
-  const lanes = Object.entries(latest.lanes || {})
-    .map(([name, status]) => `<li><code>${escapeHtml(name)}</code>: <strong class="${statusClass(status)}">${escapeHtml(status)}</strong></li>`)
-    .join('');
+  const commitUrl = commitHref(latest);
+  const commitLabel = latest.short_commit || latest.commit || 'unknown';
+  const dataHref = uploadSummaryHref(latest);
 
   el.innerHTML = `
-    <h2>Latest run</h2>
-    <p><strong class="${statusClass(latest.status)}">${escapeHtml(latest.status)}</strong> — <code>${escapeHtml(latest.id)}</code></p>
-    <p>Timestamp: <code>${formatTimestamp(latest.timestamp)}</code></p>
-    <p>Commit: <code>${escapeHtml(latest.short_commit || latest.commit)}</code></p>
-    <p>Summary: <code>${escapeHtml(latest.path)}</code></p>
-    <ul>${lanes}</ul>
+    <div>
+      <p class="eyebrow">Latest upload</p>
+      <strong>${escapeHtml(formatTimestamp(latest.timestamp))}</strong>
+    </div>
+    <div>
+      <p class="eyebrow">Commit</p>
+      ${commitUrl
+        ? `<a href="${escapeHtml(commitUrl)}" target="_blank" rel="noopener noreferrer"><code>${escapeHtml(commitLabel)}</code></a>`
+        : `<code>${escapeHtml(commitLabel)}</code>`}
+    </div>
+    <div>
+      <p class="eyebrow">Overall status</p>
+      <span class="status-pill ${escapeHtml(`status-${latest.status || 'UNKNOWN'}`)}">${escapeHtml(latest.status || 'UNKNOWN')}</span>
+    </div>
+    <div>
+      <p class="eyebrow">Data</p>
+      <a href="${escapeHtml(dataHref)}" target="_blank" rel="noopener noreferrer">summary.json</a>
+    </div>
   `;
 }
 
-function renderRunsTable(runs) {
-  const rows = runs.slice(-25).reverse().map((run) => `
-    <tr>
-      <td><code>${escapeHtml(run.id)}</code></td>
-      <td>${formatTimestamp(run.timestamp)}</td>
-      <td><strong class="${statusClass(run.status)}">${escapeHtml(run.status)}</strong></td>
-      <td><code>${escapeHtml(run.short_commit || run.commit)}</code></td>
-    </tr>
-  `).join('');
+async function initLane(name, initFn) {
+  try {
+    await initFn();
+  } catch (error) {
+    console.error(`Failed to initialize ${name}`, error);
 
-  document.getElementById('runs-table').innerHTML = rows
-    ? `<table><thead><tr><th>Run</th><th>Timestamp</th><th>Status</th><th>Commit</th></tr></thead><tbody>${rows}</tbody></table>`
-    : '<p>No runs indexed yet.</p>';
+    const statusEl = document.getElementById(`${name}-status`);
+    const messageEl = document.getElementById(`${name}-message`);
+
+    setStatus(statusEl, 'UNKNOWN');
+    if (messageEl) {
+      messageEl.classList.add('fail');
+      messageEl.textContent = `Failed to load ${name}: ${error.message}`;
+    }
+  }
 }
 
 async function loadDashboard() {
   const index = await fetchJson('data/index.json');
-  const runs = index.runs || [];
-  const latest = runs[runs.length - 1];
+  renderLatestUpload(index.latest_upload || null);
 
-  renderLatestRun(latest);
-  renderRunsTable(runs);
-  await initBenchmarkSection();
+  await initLane('benchmark', initBenchmarkSection);
+  await initLane('rtcmp-prims', initRtcmpPrimsSection);
+  await initLane('rtcmp-generic', initRtcmpGenericSection);
 }
 
 loadDashboard().catch((error) => {
-  document.getElementById('global-status').textContent = 'Load failed';
-  document.getElementById('latest-run').innerHTML = `<h2>Dashboard load failed</h2><p>${escapeHtml(error.message)}</p>`;
-  document.getElementById('runs-table').innerHTML = `<p>${escapeHtml(fmt(error.message))}</p>`;
   console.error(error);
+  document.getElementById('latest-upload').innerHTML = `
+    <div>
+      <p class="eyebrow">Dashboard load failed</p>
+      <strong>${escapeHtml(error.message)}</strong>
+    </div>
+  `;
 });

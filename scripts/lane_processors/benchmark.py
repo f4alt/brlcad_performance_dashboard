@@ -1,144 +1,103 @@
 """Benchmark lane ingestion for the BRL-CAD performance dashboard.
 
-This module owns only benchmark-derived dashboard files. Other lanes should add
-sibling modules rather than editing this file.
+This module owns only benchmark-derived dashboard files.
 """
 
 from __future__ import annotations
 
-import json
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 from pathlib import Path
 from typing import Any
 
+from .common import as_status, point_source, rows_from_lane, run_info_from_upload, to_nonnegative_float, write_json
 
-BENCHMARK_LANE = "benchmark"
-
-
-def _as_status(value: Any) -> str:
-    return str(value or "UNKNOWN").strip().upper() or "UNKNOWN"
+LANE_NAME = "benchmark"
 
 
-def _rows_from_lane(lane: dict[str, Any]) -> list[dict[str, Any]]:
-    """Return lane rows as dictionaries.
+def _row_key(build: str, index: int, total_for_build: int) -> str:
+    if total_for_build <= 1:
+        return build
+    return f"{build} #{index}"
 
-    Supports the dashboard-facing object-row shape:
-      {"rows": [{"build": "...", "vgr": 123}]}
 
-    Also supports the earlier CSV-table shape:
-      {"summary": [["build", "vgr"], ["...", "123"]]}
-    """
-    rows = lane.get("rows")
-    if isinstance(rows, list):
-        return [row for row in rows if isinstance(row, dict)]
+def _normalize_snapshot_rows(rows: list[dict[str, Any]], run_info: dict[str, Any]) -> list[dict[str, Any]]:
+    build_totals: dict[str, int] = defaultdict(int)
+    for row in rows:
+        build = str(row.get("build") or "").strip()
+        if build:
+            build_totals[build] += 1
 
-    summary = lane.get("summary")
-    if not isinstance(summary, list) or not summary:
-        return []
+    build_seen: dict[str, int] = defaultdict(int)
+    normalized: list[dict[str, Any]] = []
 
-    header = summary[0]
-    if not isinstance(header, list):
-        return []
+    for row in rows:
+        build = str(row.get("build") or "").strip()
+        vgr = to_nonnegative_float(row.get("vgr"))
 
-    columns = [str(column) for column in header]
-    normalized_rows: list[dict[str, Any]] = []
-    for raw_row in summary[1:]:
-        if not isinstance(raw_row, list):
+        if not build or vgr is None:
             continue
-        row: dict[str, Any] = {}
-        for index, column in enumerate(columns):
-            row[column] = raw_row[index] if index < len(raw_row) else ""
-        normalized_rows.append(row)
 
-    return normalized_rows
+        build_seen[build] += 1
+        source = point_source(run_info)
 
+        normalized.append({
+            **source,
+            "row_key": _row_key(build, build_seen[build], build_totals[build]),
+            "build": build,
+            "vgr": vgr,
+        })
 
-def _to_float(value: Any) -> float | None:
-    if value is None or value == "":
-        return None
-    try:
-        parsed = float(value)
-    except (TypeError, ValueError):
-        return None
-    if parsed < 0:
-        return None
-    return parsed
+    return normalized
 
 
-def _commit_label(commit: Any) -> str | None:
-    if not commit:
-        return None
-    return str(commit)[:12]
-
-
-def _write_json(path: Path, payload: dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-
-
-def process(runs: list[dict[str, Any]], root: Path, generated_at: str) -> None:
-    """Build benchmark dashboard data from immutable run summaries."""
-    out_dir = root / "data" / "benchmark"
-    latest_path = out_dir / "latest.json"
-    series_path = out_dir / "series.json"
+def process(uploads: list[dict[str, Any]], root: Path, generated_at: str) -> None:
+    out_dir = root / "data" / LANE_NAME
 
     points_by_label: "OrderedDict[str, list[dict[str, Any]]]" = OrderedDict()
-    passing_snapshots: list[dict[str, Any]] = []
-
-    latest_run = runs[-1] if runs else None
+    snapshots: list[dict[str, Any]] = []
+    latest_upload = uploads[-1] if uploads else None
     latest_benchmark_status = "UNKNOWN"
 
-    for run in runs:
-        lanes = run.get("lanes", {})
+    for upload in uploads:
+        lanes = upload.get("lanes", {})
         if not isinstance(lanes, dict):
             continue
 
-        lane = lanes.get(BENCHMARK_LANE)
+        lane = lanes.get(LANE_NAME)
         if not isinstance(lane, dict):
             continue
 
-        lane_status = _as_status(lane.get("status"))
-        if latest_run is run:
+        lane_status = as_status(lane.get("status"))
+        run_info = run_info_from_upload(upload)
+
+        if latest_upload is upload:
             latest_benchmark_status = lane_status
 
-        run_info = run.get("index", {})
-        rows = _rows_from_lane(lane)
-        run_points: list[dict[str, Any]] = []
+        snapshot_rows = _normalize_snapshot_rows(rows_from_lane(lane), run_info)
+        if not snapshot_rows:
+            continue
 
-        for row in rows:
-            build = str(row.get("build") or "").strip()
-            vgr = _to_float(row.get("vgr"))
-            if not build or vgr is None:
-                continue
+        for row in snapshot_rows:
+            build = row["build"]
+            points_by_label.setdefault(build, []).append(row)
 
-            point = {
-                "build": build,
-                "vgr": vgr,
-                "timestamp": run_info.get("timestamp"),
-                "run_id": run_info.get("id"),
-                "commit": run_info.get("commit"),
-                "short_commit": _commit_label(run_info.get("commit")),
-                "summary_path": run_info.get("path"),
-            }
-            run_points.append(point)
-            points_by_label.setdefault(build, []).append(point)
-
-        if lane_status == "PASS" and run_points:
-            passing_snapshots.append({
+        if lane_status == "PASS":
+            snapshots.append({
                 "run": run_info,
-                "rows": run_points,
+                "status": lane_status,
+                "rows": snapshot_rows,
             })
 
-    latest_passing = passing_snapshots[-1] if passing_snapshots else None
-    latest_run_id = latest_run.get("index", {}).get("id") if latest_run else None
+    latest_passing = snapshots[-1] if snapshots else None
+    latest_upload_id = latest_upload.get("index", {}).get("id") if latest_upload else None
     source_run_id = latest_passing.get("run", {}).get("id") if latest_passing else None
-    stale = bool(latest_passing and latest_run_id and source_run_id != latest_run_id)
+    stale = bool(latest_passing and latest_upload_id and source_run_id != latest_upload_id)
 
     latest_payload = {
         "schema_version": 1,
         "generated_at": generated_at,
-        "lane": BENCHMARK_LANE,
-        "latest_run_id": latest_run_id,
+        "lane": LANE_NAME,
+        "latest_upload_id": latest_upload_id,
         "latest_benchmark_status": latest_benchmark_status,
         "source_run": latest_passing.get("run") if latest_passing else None,
         "stale": stale,
@@ -150,15 +109,16 @@ def process(runs: list[dict[str, Any]], root: Path, generated_at: str) -> None:
             else "Latest benchmark run did not pass; showing the most recent passing benchmark data."
         ),
         "rows": latest_passing.get("rows", []) if latest_passing else [],
+        "comparison_runs": list(reversed(snapshots)),
     }
 
     series_payload = {
         "schema_version": 1,
         "generated_at": generated_at,
-        "lane": BENCHMARK_LANE,
+        "lane": LANE_NAME,
         "labels": list(points_by_label.keys()),
         "series_by_label": points_by_label,
     }
 
-    _write_json(latest_path, latest_payload)
-    _write_json(series_path, series_payload)
+    write_json(out_dir / "latest.json", latest_payload)
+    write_json(out_dir / "series.json", series_payload)

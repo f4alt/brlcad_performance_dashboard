@@ -1,63 +1,115 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>BRL-CAD Performance Dashboard</title>
-  <link rel="stylesheet" href="css/styles.css" />
-</head>
-<body>
-  <main>
-    <header class="page-header">
-      <div>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>BRL-CAD Performance Dashboard</title>
+    <link rel="stylesheet" href="css/styles.css">
+  </head>
+  <body>
+    <main>
+      <header class="page-title">
         <p class="eyebrow">BRL-CAD</p>
         <h1>Performance Dashboard</h1>
-      </div>
-      <div class="header-status" id="global-status">Loading…</div>
-    </header>
+      </header>
 
-    <section class="card" id="latest-run">
-      <h2>Latest run</h2>
-      <p>Loading latest run…</p>
-    </section>
-
-    <section class="card lane-card" id="benchmark-lane">
-      <div class="section-heading">
-        <div>
-          <p class="eyebrow">Lane 1</p>
-          <h2>Benchmark data</h2>
-        </div>
-        <div class="lane-status" id="benchmark-status">Loading…</div>
-      </div>
-
-      <div id="benchmark-message" class="notice">Loading benchmark data…</div>
-
-      <div class="subsection">
-        <h3>Latest passing values</h3>
-        <div id="benchmark-latest-table">Loading…</div>
-      </div>
-
-      <div class="subsection">
-        <div class="chart-controls">
+      <section class="card compact-card" id="latest-upload-section">
+        <div class="compact-grid" id="latest-upload">
           <div>
-            <h3>Value over time</h3>
-            <p class="muted">Select a build label to view all ingested VGR values for that label.</p>
+            <p class="eyebrow">Latest upload</p>
+            <strong>Loading…</strong>
           </div>
-          <label>
-            Build label
-            <select id="benchmark-label-select"></select>
-          </label>
         </div>
-        <div id="benchmark-chart" class="chart-box">Loading chart…</div>
-      </div>
-    </section>
+      </section>
 
-    <section class="card">
-      <h2>Recent runs</h2>
-      <div id="runs-table">Loading run index…</div>
-    </section>
-  </main>
+      <section class="card lane-card" id="benchmark-section">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Lane</p>
+            <h2>Benchmark</h2>
+          </div>
+          <span class="status-pill" id="benchmark-status">Loading…</span>
+        </div>
 
-  <script type="module" src="js/main.js"></script>
-</body>
+        <div id="benchmark-message" class="notice muted">Loading benchmark data…</div>
+
+        <div class="subsection">
+          <div class="section-heading tight-heading">
+            <h3>Latest passing comparison</h3>
+            <label class="select-label">
+              Compare against
+              <select id="benchmark-compare-select"></select>
+            </label>
+          </div>
+          <div id="benchmark-latest-table">Loading…</div>
+        </div>
+
+        <div class="subsection">
+          <div class="section-heading tight-heading">
+            <div>
+              <h3>VGR over time</h3>
+              <p class="muted small-text">Select one or more build labels to graph historical VGR values.</p>
+            </div>
+          </div>
+
+          <details class="selector-panel" open>
+            <summary>Build labels</summary>
+            <div id="benchmark-label-checkboxes" class="checkbox-grid">Loading labels…</div>
+          </details>
+
+          <div id="benchmark-chart" class="chart-box">Loading chart…</div>
+        </div>
+      </section>
+
+      <section class="card lane-card" id="rtcmp-prims-section">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Lane</p>
+            <h2>Primitive Performance</h2>
+          </div>
+          <span class="status-pill" id="rtcmp-prims-status">Loading…</span>
+        </div>
+
+        <div id="rtcmp-prims-message" class="notice muted">Loading primitive performance data…</div>
+
+        <div class="subsection">
+          <div class="section-heading tight-heading">
+            <h3>Leaderboard</h3>
+            <label class="select-label">
+              Dataset
+              <select id="rtcmp-prims-run-select"></select>
+            </label>
+          </div>
+          <p id="rtcmp-prims-count" class="muted small-text"></p>
+          <div id="rtcmp-prims-table" class="scroll-panel leaderboard-panel">Loading…</div>
+          <button type="button" id="rtcmp-prims-toggle" class="secondary-button">Show all</button>
+        </div>
+
+        <div class="subsection">
+          <h3 id="rtcmp-prims-chart-title">Primitive trend</h3>
+          <div id="rtcmp-prims-chart" class="chart-box">Select a primitive to view history.</div>
+        </div>
+      </section>
+
+      <section class="card lane-card" id="rtcmp-generic-section">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Lane</p>
+            <h2>Generic Raytrace Comparison</h2>
+          </div>
+          <span class="status-pill" id="rtcmp-generic-status">Loading…</span>
+        </div>
+
+        <div id="rtcmp-generic-message" class="notice muted">Loading generic comparison data…</div>
+        <div id="rtcmp-generic-chips" class="chip-grid"></div>
+
+        <details id="rtcmp-generic-details" class="subsection collapsible-table">
+          <summary>Expand latest full table</summary>
+          <div id="rtcmp-generic-table" class="scroll-panel generic-table-panel">Loading…</div>
+        </details>
+      </section>
+    </main>
+
+    <script type="module" src="js/main.js"></script>
+  </body>
 </html>
