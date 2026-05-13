@@ -26,7 +26,7 @@ site/
   js/                       # shared frontend code and lane modules
     lanes/                  # one frontend module per dashboard lane
 
-examples/		    # potentially useful patterns for using the dashboard
+examples/                   # potentially useful patterns for using the dashboard
 ```
 
 ## Data flow
@@ -52,3 +52,13 @@ data/<lane>/
 ```
 
 The ingest script should stay lane-agnostic: it loads uploaded summaries, builds the global index, and calls registered lane processors. See `examples/adding_a_lane.md` for the expected pattern.
+
+## Important Notes / Future Work
+
+A few long-term considerations are worth keeping in mind as the dashboard grows:
+
+- **Keep uploads small.** `data/uploads/<run-id>/summary.json` is intended to be the durable source of truth for each performance run. Small CSV summaries are reasonable to archive alongside it, but large logs, raw dumps, build artifacts, images, and full debug packages should not be committed here. Those are better kept as short-retention GitHub Actions artifacts.
+
+- **Treat `summary.json` as a schema contract.** The dashboard ingestion scripts depend on stable lane names, run metadata, and row fields such as `build`, `vgr`, `prim`, `rays_per_sec`, and `perf_delta_percent`. If the BRL-CAD runner changes the shape of `summary.json`, update the schema version and adjust the relevant lane processor.
+
+- **`data/` is re-indexed on every ingest run.** The current pipeline scans all uploaded summaries, rebuilds `data/index.json`, regenerates lane-specific derived JSON, and deploys the site. This is simple and reproducible, but it means the cost of ingestion grows with the number and size of archived uploads. If this becomes expensive, future work should move toward cached or incremental indexing while preserving the ability to fully regenerate from `data/uploads/`.
