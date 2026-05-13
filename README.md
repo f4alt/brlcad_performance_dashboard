@@ -1,75 +1,54 @@
 # BRL-CAD Performance Dashboard
 
-Static GitHub Pages dashboard for BRL-CAD performance runs.
-
-## Initial flow
-
-1. The BRL-CAD performance workflow produces a run package containing `summary.json`.
-2. The package is committed into this repo under `data/runs/<run-id>/`.
-3. The `Acknowledge performance run` workflow validates the latest summaries and regenerates `data/index.json` and `data/status/latest.json`.
-4. The Pages workflow publishes `site/` plus `data/` as a static dashboard.
-
-## Suggested run package layout
-
-```text
-perf-package/
-  summary.json
-  benchmark/
-    summary.csv
-    benchmark.log
-  rtcmp-prims/
-    prims_summary.csv
-  rtcmp-generic/
-    summary.csv
-```
-
-Only `summary.json` is required by the dashboard. The raw CSVs and logs are retained for audit/debugging.
+Static GitHub Pages dashboard for BRL-CAD performance runs. The BRL-CAD performance workflow uploads immutable `summary.json` packages, this repo ingests them, derives lane-specific dashboard data, and deploys a lightweight frontend for viewing latest results and historical trends.
 
 ## Repository layout
 
 ```text
 .github/workflows/
-  ack-ingest.yml       # validates run summaries and updates derived index/status JSON
-  deploy-pages.yml     # publishes the static GitHub Pages site
-
-scripts/
-  ingest_summary.py    # validates summaries, builds global index, runs lane processors
-  lane_processors/     # one module per dashboard lane; benchmark is implemented first
-
-site/
-  index.html           # placeholder static dashboard
+  ack-ingest.yml            # ingests uploaded summaries and deploys GitHub Pages
 
 data/
-  index.json              # generated run index
-  status/latest.json      # generated latest-run acknowledgement
-  benchmark/latest.json   # generated latest passing benchmark comparison
-  benchmark/series.json   # generated VGR history keyed by build label
-  runs/<run-id>/          # immutable run packages committed by BRL-CAD workflow
+  uploads/<run-id>/         # immutable uploaded run packages from BRL-CAD
+    summary.json            # canonical per-run summary
+  index.json                # generated global upload index
+  benchmark/                # generated benchmark lane data
+  rtcmp_prims/              # generated primitive-performance lane data
+  rtcmp_generic/            # generated generic-comparison lane data
 
-examples/
-  brlcad-publish-to-dashboard.yml # source-repo publishing sketch
+scripts/
+  ingest_summary.py         # validates uploads, builds the index, runs lane processors
+  lane_processors/          # one processor per dashboard lane
+
+site/
+  index.html                # static dashboard shell
+  css/                      # dashboard styling
+  js/                       # shared frontend code and lane modules
+    lanes/                  # one frontend module per dashboard lane
+
+examples/		    # potentially useful patterns for using the dashboard
 ```
 
-## Auth setup for BRL-CAD -> dashboard pushes
-
-Recommended first pass: create a deploy key with write access on this dashboard repo.
-
-1. Generate an SSH key pair for automation.
-2. Add the public key to this repo under Settings -> Deploy keys -> Allow write access.
-3. Add the private key to the BRL-CAD repo as `PERF_DASHBOARD_DEPLOY_KEY`.
-4. Use the example workflow snippet in `examples/brlcad-publish-to-dashboard.yml` as the publishing step.
-
-
-## Lane processor pattern
-
-Each lane should own its own processor under `scripts/lane_processors/` and write its own derived files under `data/<lane>/`. The main ingest script only loads run summaries, builds the global index, and calls registered processors. This keeps benchmark, primitive, and generic dashboard logic isolated from one another.
-
-Implemented first:
+## Data flow
 
 ```text
-scripts/lane_processors/benchmark.py
-data/benchmark/latest.json
-data/benchmark/series.json
+BRL-CAD performance workflow
+  -> data/uploads/<run-id>/summary.json
+  -> scripts/ingest_summary.py
+  -> data/index.json + data/<lane>/*.json
+  -> GitHub Pages deploys site/ plus generated data/
 ```
 
-The benchmark processor keeps the latest passing benchmark values visible. If the newest run has a failed benchmark lane, `data/benchmark/latest.json` stays pinned to the most recent passing benchmark run and marks the data as stale.
+Only `summary.json` is required from each upload package. Extra CSVs and logs may be kept alongside it for audit/debugging, but generated dashboard data should be reproducible from the uploaded summaries.
+
+## Lane pattern
+
+Each lane owns its backend processor, frontend module, and generated data directory:
+
+```text
+scripts/lane_processors/<lane>.py
+site/js/lanes/<lane>.js
+data/<lane>/
+```
+
+The ingest script should stay lane-agnostic: it loads uploaded summaries, builds the global index, and calls registered lane processors. See `examples/adding_a_lane.md` for the expected pattern.
