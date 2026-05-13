@@ -8,17 +8,13 @@ import {
   setStatus,
 } from '../utils.js';
 
-const DEFAULT_VISIBLE_ROWS = 15;
-
-function renderLeaderboardRows(rows, selectedPrim, expanded) {
-  const visibleRows = expanded ? rows : rows.slice(0, DEFAULT_VISIBLE_ROWS);
-
-  if (!visibleRows.length) {
+function renderLeaderboardRows(rows) {
+  if (!rows.length) {
     return '<p class="muted">No primitive performance rows are available.</p>';
   }
 
-  const body = visibleRows.map((row) => `
-    <tr class="clickable-row ${row.prim === selectedPrim ? 'selected-row' : ''}" data-prim="${escapeHtml(row.prim)}">
+  const body = rows.map((row) => `
+    <tr class="clickable-row" data-prim="${escapeHtml(row.prim)}">
       <td>${escapeHtml(row.prim)}</td>
       <td class="numeric">${formatNumber(row.rays_per_sec)}</td>
     </tr>
@@ -74,13 +70,12 @@ export async function initRtcmpPrimsSection() {
   const runSelectEl = document.getElementById('rtcmp-prims-run-select');
   const countEl = document.getElementById('rtcmp-prims-count');
   const tableEl = document.getElementById('rtcmp-prims-table');
-  const toggleEl = document.getElementById('rtcmp-prims-toggle');
+  const overlayEl = document.getElementById('rtcmp-prims-overlay');
+  const closeEl = document.getElementById('rtcmp-prims-overlay-close');
   const chartTitleEl = document.getElementById('rtcmp-prims-chart-title');
   const chartEl = document.getElementById('rtcmp-prims-chart');
 
   const snapshots = runs.snapshots || [];
-  let expanded = false;
-  let selectedPrim = '';
 
   runSelectEl.innerHTML = snapshots.length
     ? snapshots.map((snapshot, index) => `
@@ -93,22 +88,29 @@ export async function initRtcmpPrimsSection() {
     return snapshots[Number(runSelectEl.value)] || snapshots[0] || null;
   }
 
+  function closeOverlay() {
+    overlayEl.hidden = true;
+  }
+
+  function openPrimitiveOverlay(prim) {
+    chartTitleEl.textContent = `${prim} rays/sec over time`;
+    chartEl.innerHTML = renderPrimitiveChart(series, prim);
+    overlayEl.hidden = false;
+  }
+
   function render() {
     const snapshot = selectedSnapshot();
+    closeOverlay();
 
     if (!snapshot) {
       setStatus(statusEl, 'UNKNOWN');
       messageEl.textContent = 'No primitive performance data has been ingested yet.';
+      countEl.textContent = '';
       tableEl.innerHTML = '<p class="muted">No primitive rows available.</p>';
-      chartEl.innerHTML = renderPrimitiveChart(series, selectedPrim);
-      toggleEl.hidden = true;
       return;
     }
 
     const rows = snapshot.rows || [];
-    if (!selectedPrim && rows.length) {
-      selectedPrim = rows.find((row) => row.rays_per_sec != null)?.prim || rows[0].prim;
-    }
 
     setStatus(statusEl, snapshot.status || 'UNKNOWN');
     const summary = snapshot.summary || {};
@@ -118,30 +120,18 @@ export async function initRtcmpPrimsSection() {
       <code>${escapeHtml(snapshot.run?.id || 'unknown run')}</code> · ${escapeHtml(formatTimestamp(snapshot.run?.timestamp))}.
     `;
 
-    countEl.textContent = expanded
-      ? `Showing all ${rows.length} primitives.`
-      : `Showing top ${Math.min(DEFAULT_VISIBLE_ROWS, rows.length)} of ${rows.length} primitives.`;
-
-    tableEl.classList.toggle('collapsed', !expanded);
-    tableEl.innerHTML = renderLeaderboardRows(rows, selectedPrim, expanded);
-    toggleEl.hidden = rows.length <= DEFAULT_VISIBLE_ROWS;
-    toggleEl.textContent = expanded ? 'Collapse' : 'Show all';
-
-    chartTitleEl.textContent = selectedPrim ? `${selectedPrim} rays/sec over time` : 'Primitive trend';
-    chartEl.innerHTML = renderPrimitiveChart(series, selectedPrim);
+    countEl.textContent = `${rows.length} primitives. Scroll to inspect the full leaderboard.`;
+    tableEl.innerHTML = renderLeaderboardRows(rows);
   }
 
-  runSelectEl.addEventListener('change', () => {
-    const rows = selectedSnapshot()?.rows || [];
-    if (!rows.some((row) => row.prim === selectedPrim)) {
-      selectedPrim = rows.find((row) => row.rays_per_sec != null)?.prim || rows[0]?.prim || '';
-    }
-    render();
-  });
+  runSelectEl.addEventListener('change', render);
 
-  toggleEl.addEventListener('click', () => {
-    expanded = !expanded;
-    render();
+  closeEl.addEventListener('click', closeOverlay);
+
+  overlayEl.addEventListener('click', (event) => {
+    if (event.target === overlayEl) {
+      closeOverlay();
+    }
   });
 
   tableEl.addEventListener('click', (event) => {
@@ -150,8 +140,7 @@ export async function initRtcmpPrimsSection() {
       return;
     }
 
-    selectedPrim = row.dataset.prim;
-    render();
+    openPrimitiveOverlay(row.dataset.prim);
   });
 
   render();

@@ -17,10 +17,10 @@ VISIBLE_COLUMNS = [
     "tag",
     "compare_status",
     "comp_status_tol",
-    "perf_delta_percent",
     "perf_status",
     "perf1_rays_per_sec_wall",
     "perf2_rays_per_sec_wall",
+    "perf_delta_percent",
 ]
 
 NUMERIC_FIELDS = {

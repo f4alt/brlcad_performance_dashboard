@@ -31,15 +31,9 @@
           <span class="status-pill" id="benchmark-status">Loading…</span>
         </div>
 
-        <div id="benchmark-message" class="notice muted">Loading benchmark data…</div>
-
         <div class="subsection">
           <div class="section-heading tight-heading">
-            <h3>Latest passing comparison</h3>
-            <label class="select-label">
-              Compare against
-              <select id="benchmark-compare-select"></select>
-            </label>
+            <h3>Benchmark comparison</h3>
           </div>
           <div id="benchmark-latest-table">Loading…</div>
         </div>
@@ -81,13 +75,18 @@
             </label>
           </div>
           <p id="rtcmp-prims-count" class="muted small-text"></p>
-          <div id="rtcmp-prims-table" class="scroll-panel leaderboard-panel">Loading…</div>
-          <button type="button" id="rtcmp-prims-toggle" class="secondary-button">Show all</button>
-        </div>
-
-        <div class="subsection">
-          <h3 id="rtcmp-prims-chart-title">Primitive trend</h3>
-          <div id="rtcmp-prims-chart" class="chart-box">Select a primitive to view history.</div>
+          <div class="leaderboard-shell">
+            <div id="rtcmp-prims-table" class="scroll-panel leaderboard-panel">Loading…</div>
+            <div id="rtcmp-prims-overlay" class="chart-overlay" hidden>
+              <div class="chart-overlay-card">
+                <div class="section-heading tight-heading">
+                  <h3 id="rtcmp-prims-chart-title">Primitive trend</h3>
+                  <button type="button" id="rtcmp-prims-overlay-close" class="secondary-button">Close</button>
+                </div>
+                <div id="rtcmp-prims-chart" class="chart-box">Select a primitive to view history.</div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 

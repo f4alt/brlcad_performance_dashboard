@@ -5,17 +5,27 @@ function chip(label, value, extraClass = '') {
 }
 
 function renderChips(summary) {
-  const worst = summary.worst_regression;
-  const best = summary.best_improvement;
-
   return [
     chip('Rows', formatNumber(summary.row_count || 0)),
     chip('Passing', formatNumber(summary.passing || 0), 'status-PASS'),
     chip('Failing', formatNumber(summary.failing || 0), (summary.failing || 0) > 0 ? 'status-FAIL' : ''),
     chip('Average delta', formatPercent(summary.average_delta_percent)),
-    chip('Worst regression', worst ? `${worst.tag || 'unknown'} ${formatPercent(worst.perf_delta_percent)}` : '—'),
-    chip('Best improvement', best ? `${best.tag || 'unknown'} ${formatPercent(best.perf_delta_percent)}` : '—'),
   ].join('');
+}
+
+function headingLabel(column) {
+  const labels = {
+    status: 'Status',
+    tag: 'Tag',
+    compare_status: 'Compare',
+    comp_status_tol: 'Tolerance',
+    perf_status: 'Perf status',
+    perf1_rays_per_sec_wall: 'Perf1 rays/sec',
+    perf2_rays_per_sec_wall: 'Perf2 rays/sec',
+    perf_delta_percent: 'Perf delta %',
+  };
+
+  return labels[column] || column;
 }
 
 function renderTable(latest) {
@@ -29,10 +39,10 @@ function renderTable(latest) {
     'tag',
     'compare_status',
     'comp_status_tol',
-    'perf_delta_percent',
     'perf_status',
     'perf1_rays_per_sec_wall',
     'perf2_rays_per_sec_wall',
+    'perf_delta_percent',
   ];
 
   const body = rows.map((row) => `
@@ -49,7 +59,7 @@ function renderTable(latest) {
   return `
     <table>
       <thead>
-        <tr>${columns.map((column) => `<th>${escapeHtml(column)}</th>`).join('')}</tr>
+        <tr>${columns.map((column) => `<th class="${column === 'perf_delta_percent' ? 'numeric' : ''}">${escapeHtml(headingLabel(column))}</th>`).join('')}</tr>
       </thead>
       <tbody>${body}</tbody>
     </table>

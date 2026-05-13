@@ -2,59 +2,90 @@ import {
   escapeHtml,
   fetchJson,
   formatNumber,
-  formatPercent,
   formatShortTimestamp,
-  formatTimestamp,
   renderLineChart,
-  runOptionLabel,
   setStatus,
-  uploadSummaryHref,
 } from '../utils.js';
 
-function rowsByKey(rows) {
-  const map = new Map();
-  for (const row of rows || []) {
-    map.set(row.row_key || row.build, row);
-  }
-  return map;
+function pointId(point, index) {
+  return [
+    point.build || '',
+    point.run_id || '',
+    point.timestamp || '',
+    point.row_key || '',
+    index,
+  ].join('|');
 }
 
-function renderComparisonTable(latestRows, selectedSnapshot) {
-  if (!latestRows?.length) {
-    return '<p class="muted">No passing benchmark values have been ingested yet.</p>';
+function flattenBenchmarkPoints(series) {
+  const points = [];
+  for (const label of series.labels || []) {
+    for (const point of series.series_by_label?.[label] || []) {
+      points.push(point);
+    }
   }
 
-  const selectedRows = rowsByKey(selectedSnapshot?.rows || []);
-  const body = latestRows.map((row) => {
-    const selected = selectedRows.get(row.row_key || row.build);
-    const latestValue = Number(row.vgr);
-    const selectedValue = selected?.vgr == null ? null : Number(selected.vgr);
-    const delta = selectedValue != null && Number.isFinite(selectedValue) && selectedValue !== 0
-      ? ((latestValue - selectedValue) / selectedValue) * 100
-      : null;
+  return points
+    .map((point, index) => ({ ...point, point_id: pointId(point, index) }))
+    .sort((a, b) => {
+      const timeSort = String(b.timestamp || '').localeCompare(String(a.timestamp || ''));
+      if (timeSort !== 0) {
+        return timeSort;
+      }
+      return String(a.row_key || a.build || '').localeCompare(String(b.row_key || b.build || ''));
+    });
+}
 
-    return `
-      <tr>
-        <td>${escapeHtml(row.row_key || row.build)}</td>
-        <td class="numeric">${formatNumber(row.vgr)}</td>
-        <td class="numeric">${selected ? formatNumber(selected.vgr) : '—'}</td>
-        <td class="numeric">${formatPercent(delta)}</td>
-      </tr>
-    `;
-  }).join('');
+function optionLabel(point) {
+  const build = point.row_key || point.build || 'unknown build';
+  const timestamp = formatShortTimestamp(point.timestamp);
+  return `${build} - ${timestamp}`;
+}
+
+function renderBenchmarkPointSelect(points, selectId, selectedId) {
+  if (!points.length) {
+    return '<select disabled><option>No benchmark data available</option></select>';
+  }
+
+  return `
+    <select id="${escapeHtml(selectId)}">
+      ${points.map((point) => `
+        <option value="${escapeHtml(point.point_id)}" ${point.point_id === selectedId ? 'selected' : ''}>
+          ${escapeHtml(optionLabel(point))}
+        </option>
+      `).join('')}
+    </select>
+  `;
+}
+
+function renderComparisonTable(points, selectedIds) {
+  if (!points.length) {
+    return '<p class="muted">No benchmark values have been ingested yet.</p>';
+  }
+
+  const byId = new Map(points.map((point) => [point.point_id, point]));
+  const selected = selectedIds.map((id) => byId.get(id)).filter(Boolean);
 
   return `
     <div class="table-wrap">
-      <table>
+      <table class="compact-table">
         <thead>
           <tr>
             <th>Build</th>
-            <th class="numeric">Latest VGR</th>
-            <th class="numeric">Selected VGR</th>
-            <th class="numeric">Delta</th>
+            <th class="numeric">VGR</th>
           </tr>
         </thead>
-        <tbody>${body}</tbody>
+        <tbody>
+          ${[0, 1].map((slot) => {
+            const point = selected[slot] || points[slot] || points[0];
+            return `
+              <tr>
+                <td>${renderBenchmarkPointSelect(points, `benchmark-point-${slot}`, point?.point_id || '')}</td>
+                <td class="numeric strong-number">${formatNumber(point?.vgr)}</td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
       </table>
     </div>
   `;
@@ -111,6 +142,27 @@ function defaultSelectedLabels(labels, latestRows) {
   return selected;
 }
 
+function defaultSelectedPointIds(points, latestRows) {
+  const latestKeys = new Set((latestRows || []).map((row) => `${row.run_id}|${row.row_key || row.build}`));
+  const selected = [];
+
+  for (const point of points) {
+    const key = `${point.run_id}|${point.row_key || point.build}`;
+    if (latestKeys.has(key)) {
+      selected.push(point.point_id);
+    }
+    if (selected.length >= 2) {
+      break;
+    }
+  }
+
+  while (selected.length < 2 && points[selected.length]) {
+    selected.push(points[selected.length].point_id);
+  }
+
+  return selected;
+}
+
 export async function initBenchmarkSection() {
   const [latest, series] = await Promise.all([
     fetchJson('data/benchmark/latest.json'),
@@ -118,40 +170,33 @@ export async function initBenchmarkSection() {
   ]);
 
   const statusEl = document.getElementById('benchmark-status');
-  const messageEl = document.getElementById('benchmark-message');
   const tableEl = document.getElementById('benchmark-latest-table');
-  const compareSelectEl = document.getElementById('benchmark-compare-select');
   const checkboxEl = document.getElementById('benchmark-label-checkboxes');
   const chartEl = document.getElementById('benchmark-chart');
 
   const effectiveStatus = latest.rows?.length ? 'PASS' : 'UNKNOWN';
   setStatus(statusEl, effectiveStatus);
 
-  const sourceRun = latest.source_run || null;
-  const sourceLink = sourceRun ? `<a href="${escapeHtml(uploadSummaryHref(sourceRun))}" target="_blank" rel="noopener noreferrer"><code>${escapeHtml(sourceRun.id)}</code></a>` : '—';
+  const points = flattenBenchmarkPoints(series);
+  let selectedPointIds = defaultSelectedPointIds(points, latest.rows || []);
 
-  messageEl.classList.toggle('warn', Boolean(latest.stale));
-  messageEl.innerHTML = `
-    ${escapeHtml(latest.message || 'Benchmark data loaded.')}
-    ${sourceRun ? `<br>Displayed run: ${sourceLink} · ${escapeHtml(formatTimestamp(sourceRun.timestamp))}` : ''}
-    ${latest.latest_benchmark_status ? `<br>Latest benchmark status: <strong class="${escapeHtml(`status-${latest.latest_benchmark_status}`)}">${escapeHtml(latest.latest_benchmark_status)}</strong>` : ''}
-  `;
+  const rerenderComparison = () => {
+    tableEl.innerHTML = renderComparisonTable(points, selectedPointIds);
 
-  const comparisonRuns = latest.comparison_runs || [];
-  compareSelectEl.innerHTML = comparisonRuns.length
-    ? comparisonRuns.map((snapshot, index) => `
-        <option value="${index}">${escapeHtml(runOptionLabel(snapshot.run, snapshot.status))}</option>
-      `).join('')
-    : '<option value="">No passing runs available</option>';
-  compareSelectEl.disabled = comparisonRuns.length === 0;
+    for (const slot of [0, 1]) {
+      const select = document.getElementById(`benchmark-point-${slot}`);
+      if (!select) {
+        continue;
+      }
 
-  const renderComparison = () => {
-    const selectedSnapshot = comparisonRuns[Number(compareSelectEl.value)] || comparisonRuns[0] || null;
-    tableEl.innerHTML = renderComparisonTable(latest.rows || [], selectedSnapshot);
+      select.addEventListener('change', () => {
+        selectedPointIds[slot] = select.value;
+        rerenderComparison();
+      });
+    }
   };
 
-  compareSelectEl.addEventListener('change', renderComparison);
-  renderComparison();
+  rerenderComparison();
 
   const labels = series.labels || [];
   const selectedLabels = defaultSelectedLabels(labels, latest.rows || []);
