@@ -20,6 +20,9 @@
             <strong>Loading…</strong>
           </div>
         </div>
+        <p class="runner-disclaimer">
+          Performance data is captured primarily on GitHub-hosted runners. General trends are useful, but individual run-to-run differences may reflect runner machine availability, system load, and shared-environment variability.
+        </p>
       </section>
 
       <section class="card lane-card" id="benchmark-section">
@@ -100,6 +103,14 @@
         </div>
 
         <div id="rtcmp-generic-message" class="notice muted">Loading generic comparison data…</div>
+
+        <div class="subsection dataset-row">
+          <label class="select-label">
+            Dataset
+            <select id="rtcmp-generic-run-select"></select>
+          </label>
+        </div>
+
         <div id="rtcmp-generic-chips" class="chip-grid"></div>
 
         <details id="rtcmp-generic-details" class="subsection collapsible-table">

@@ -84,39 +84,18 @@ def _summarize_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
 
     average_delta = sum(deltas) / len(deltas) if deltas else None
 
-    rows_with_delta = [row for row in rows if isinstance(row.get("perf_delta_percent"), (int, float))]
-    worst = min(rows_with_delta, key=lambda row: row["perf_delta_percent"], default=None)
-    best = max(rows_with_delta, key=lambda row: row["perf_delta_percent"], default=None)
-
     return {
         "row_count": len(rows),
         "passing": passing,
         "failing": failing,
         "average_delta_percent": average_delta,
-        "worst_regression": _summary_row(worst),
-        "best_improvement": _summary_row(best),
-    }
-
-
-def _summary_row(row: dict[str, Any] | None) -> dict[str, Any] | None:
-    if row is None:
-        return None
-
-    return {
-        "tag": row.get("tag"),
-        "file": row.get("file"),
-        "component": row.get("component"),
-        "perf_delta_percent": row.get("perf_delta_percent"),
-        "status": row.get("status"),
-        "compare_status": row.get("compare_status"),
-        "perf_status": row.get("perf_status"),
     }
 
 
 def process(uploads: list[dict[str, Any]], root: Path, generated_at: str) -> None:
     out_dir = root / "data" / LANE_NAME
 
-    latest_snapshot: dict[str, Any] | None = None
+    snapshots: list[dict[str, Any]] = []
 
     for upload in uploads:
         lanes = upload.get("lanes", {})
@@ -131,14 +110,16 @@ def process(uploads: list[dict[str, Any]], root: Path, generated_at: str) -> Non
         if not rows:
             continue
 
-        latest_snapshot = {
+        snapshots.append({
             "run": run_info_from_upload(upload),
             "status": as_status(lane.get("status")),
             "columns": list(lane.get("columns", [])) if isinstance(lane.get("columns"), list) else [],
             "visible_columns": VISIBLE_COLUMNS,
             "summary": _summarize_rows(rows),
             "rows": rows,
-        }
+        })
+
+    latest_snapshot = snapshots[-1] if snapshots else None
 
     latest_payload = {
         "schema_version": 1,
@@ -153,10 +134,16 @@ def process(uploads: list[dict[str, Any]], root: Path, generated_at: str) -> Non
             "passing": 0,
             "failing": 0,
             "average_delta_percent": None,
-            "worst_regression": None,
-            "best_improvement": None,
         },
         "rows": latest_snapshot.get("rows", []) if latest_snapshot else [],
     }
 
+    runs_payload = {
+        "schema_version": 1,
+        "generated_at": generated_at,
+        "lane": LANE_NAME,
+        "snapshots": list(reversed(snapshots)),
+    }
+
     write_json(out_dir / "latest.json", latest_payload)
+    write_json(out_dir / "runs.json", runs_payload)

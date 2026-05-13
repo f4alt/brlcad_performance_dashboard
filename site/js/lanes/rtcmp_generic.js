@@ -1,4 +1,12 @@
-import { escapeHtml, fetchJson, formatNumber, formatPercent, formatTimestamp, setStatus } from '../utils.js';
+import {
+  escapeHtml,
+  fetchJson,
+  formatNumber,
+  formatPercent,
+  formatTimestamp,
+  runOptionLabel,
+  setStatus,
+} from '../utils.js';
 
 function chip(label, value, extraClass = '') {
   return `<span class="chip ${extraClass}"><strong>${escapeHtml(label)}:</strong> ${escapeHtml(value)}</span>`;
@@ -28,13 +36,13 @@ function headingLabel(column) {
   return labels[column] || column;
 }
 
-function renderTable(latest) {
-  const rows = latest.rows || [];
+function renderTable(snapshot) {
+  const rows = snapshot.rows || [];
   if (!rows.length) {
     return '<p class="muted">No generic comparison rows are available.</p>';
   }
 
-  const columns = latest.visible_columns || [
+  const columns = snapshot.visible_columns || [
     'status',
     'tag',
     'compare_status',
@@ -67,21 +75,49 @@ function renderTable(latest) {
 }
 
 export async function initRtcmpGenericSection() {
-  const latest = await fetchJson('data/rtcmp_generic/latest.json');
+  const runs = await fetchJson('data/rtcmp_generic/runs.json');
 
   const statusEl = document.getElementById('rtcmp-generic-status');
   const messageEl = document.getElementById('rtcmp-generic-message');
+  const runSelectEl = document.getElementById('rtcmp-generic-run-select');
   const chipsEl = document.getElementById('rtcmp-generic-chips');
   const tableEl = document.getElementById('rtcmp-generic-table');
 
-  setStatus(statusEl, latest.status || 'UNKNOWN');
+  const snapshots = runs.snapshots || [];
 
-  const sourceRun = latest.source_run || null;
-  messageEl.classList.toggle('warn', latest.status !== 'PASS');
-  messageEl.innerHTML = sourceRun
-    ? `Latest generic table from <code>${escapeHtml(sourceRun.id)}</code> · ${escapeHtml(formatTimestamp(sourceRun.timestamp))}.`
-    : 'No generic comparison data has been ingested yet.';
+  runSelectEl.innerHTML = snapshots.length
+    ? snapshots.map((snapshot, index) => `
+        <option value="${index}">${escapeHtml(runOptionLabel(snapshot.run, snapshot.status))}</option>
+      `).join('')
+    : '<option value="">No generic datasets available</option>';
+  runSelectEl.disabled = snapshots.length === 0;
 
-  chipsEl.innerHTML = renderChips(latest.summary || {});
-  tableEl.innerHTML = renderTable(latest);
+  function selectedSnapshot() {
+    return snapshots[Number(runSelectEl.value)] || snapshots[0] || null;
+  }
+
+  function render() {
+    const snapshot = selectedSnapshot();
+
+    if (!snapshot) {
+      setStatus(statusEl, 'UNKNOWN');
+      messageEl.textContent = 'No generic comparison data has been ingested yet.';
+      chipsEl.innerHTML = renderChips({});
+      tableEl.innerHTML = '<p class="muted">No generic comparison rows are available.</p>';
+      return;
+    }
+
+    setStatus(statusEl, snapshot.status || 'UNKNOWN');
+
+    messageEl.classList.toggle('warn', snapshot.status !== 'PASS');
+    messageEl.innerHTML = snapshot.run
+      ? `Generic table from <code>${escapeHtml(snapshot.run.id || 'unknown run')}</code> · ${escapeHtml(formatTimestamp(snapshot.run.timestamp))}.`
+      : 'No generic comparison run metadata is available.';
+
+    chipsEl.innerHTML = renderChips(snapshot.summary || {});
+    tableEl.innerHTML = renderTable(snapshot);
+  }
+
+  runSelectEl.addEventListener('change', render);
+  render();
 }

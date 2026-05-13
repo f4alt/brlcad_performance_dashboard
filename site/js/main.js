@@ -38,7 +38,7 @@ function renderLatestUpload(latest) {
     </div>
     <div>
       <p class="eyebrow">Data</p>
-      <a href="${escapeHtml(dataHref)}" target="_blank" rel="noopener noreferrer">summary.json</a>
+      <a href="${escapeHtml(dataHref)}" target="_blank" rel="noopener noreferrer">upload package</a>
     </div>
   `;
 }

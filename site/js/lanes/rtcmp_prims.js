@@ -6,6 +6,7 @@ import {
   renderLineChart,
   runOptionLabel,
   setStatus,
+  uploadPackageHref,
 } from '../utils.js';
 
 function renderLeaderboardRows(rows) {
@@ -55,7 +56,7 @@ function renderPrimitiveChart(series, prim) {
       `Timestamp: ${point.timestamp || 'unknown'}`,
       `Status: ${point.status || 'unknown'}`,
     ].join('\n'),
-    href: (point) => point.summary_path || '#',
+    href: (point) => uploadPackageHref(point),
   });
 }
 

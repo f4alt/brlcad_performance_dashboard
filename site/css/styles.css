@@ -58,6 +58,17 @@ code { border-radius: 0.35rem; background: var(--soft); padding: 0.1rem 0.3rem; 
 .small-text { font-size: 0.92rem; }
 .muted { color: var(--muted); }
 
+.runner-disclaimer {
+  margin: 0.75rem 0 0;
+  max-width: 72rem;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.dataset-row {
+  margin-top: 0.85rem;
+}
+
 .section-heading,
 .compact-grid {
   display: flex;

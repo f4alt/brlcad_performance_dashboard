@@ -99,12 +99,26 @@ export async function fetchJson(path) {
   return response.json();
 }
 
-export function uploadSummaryHref(run) {
+const DASHBOARD_UPLOAD_TREE_BASE = 'https://github.com/f4alt/brlcad_performance_dashboard/tree/main/';
+
+export function uploadPackageHref(run) {
   if (!run) {
     return '#';
   }
-  return run.path || (run.package_path ? `${run.package_path}/summary.json` : '#');
+
+  const packagePath = run.package_path || (run.path ? String(run.path).replace(/\/?summary\.json$/, '') : '');
+  if (!packagePath) {
+    return '#';
+  }
+
+  if (/^https?:\/\//i.test(packagePath)) {
+    return packagePath;
+  }
+
+  return `${DASHBOARD_UPLOAD_TREE_BASE}${packagePath}`;
 }
+
+export const uploadSummaryHref = uploadPackageHref;
 
 export function commitHref(run) {
   if (!run?.repository || !run?.commit) {

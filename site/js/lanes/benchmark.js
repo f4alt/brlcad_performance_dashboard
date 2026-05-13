@@ -5,6 +5,7 @@ import {
   formatShortTimestamp,
   renderLineChart,
   setStatus,
+  uploadPackageHref,
 } from '../utils.js';
 
 function pointId(point, index) {
@@ -127,7 +128,7 @@ function renderBenchmarkChart(series, labels) {
       `Commit: ${point.short_commit || point.commit || 'unknown'}`,
       `Timestamp: ${point.timestamp || 'unknown'}`,
     ].join('\n'),
-    href: (point) => point.summary_path || '#',
+    href: (point) => uploadPackageHref(point),
   });
 }
 
