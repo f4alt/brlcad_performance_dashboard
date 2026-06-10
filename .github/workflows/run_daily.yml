@@ -1,0 +1,116 @@
+name: Daily performance run
+
+# Builds current BRL-CAD on a consistent self-hosted server over SSH, measures
+# absolute benchmark + per-primitive metrics, and pushes the summary into the
+# inbox (which triggers ingest_and_deploy.yml).
+#
+# Required repo secrets:
+#   RUNNER_HOST     server hostname/IP reachable from GitHub-hosted runners
+#   RUNNER_USER     ssh user
+#   RUNNER_SSH_KEY  private key (PEM) authorized on the server
+#   RUNNER_PORT     optional ssh port (default 22)
+
+on:
+  schedule:
+    - cron: "17 4 * * *" # daily ~04:17 UTC (off-peak, off-:00)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: brlcad-performance-daily
+  cancel-in-progress: false
+
+jobs:
+  measure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350 # clean build (incl. bext) can be long
+    env:
+      RUNNER_HOST: ${{ secrets.RUNNER_HOST }}
+      RUNNER_USER: ${{ secrets.RUNNER_USER }}
+      RUNNER_PORT: ${{ secrets.RUNNER_PORT || '22' }}
+      REMOTE_WORK: "brlcad-perf-${{ github.run_id }}-${{ github.run_attempt }}"
+      SSH_OPTS: "-o ServerAliveInterval=60 -o ServerAliveCountMax=120"
+
+    steps:
+      - name: Checkout dashboard repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up SSH
+        run: |
+          set -Eeuo pipefail
+          test -n "$RUNNER_HOST" || { echo "::error::RUNNER_HOST secret is not set"; exit 1; }
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "${{ secrets.RUNNER_SSH_KEY }}" > ~/.ssh/runner_key
+          chmod 600 ~/.ssh/runner_key
+          ssh-keyscan -p "$RUNNER_PORT" "$RUNNER_HOST" > ~/.ssh/known_hosts 2>/tmp/keyscan.err || true
+          test -s ~/.ssh/known_hosts || { echo "::error::ssh-keyscan returned no host keys for $RUNNER_HOST:$RUNNER_PORT"; cat /tmp/keyscan.err >&2 || true; exit 1; }
+
+      - name: Ship runner scripts to server
+        run: |
+          set -Eeuo pipefail
+          ssh $SSH_OPTS -i ~/.ssh/runner_key -p "$RUNNER_PORT" "$RUNNER_USER@$RUNNER_HOST" "mkdir -p ~/$REMOTE_WORK"
+          scp $SSH_OPTS -i ~/.ssh/runner_key -P "$RUNNER_PORT" -r runner "$RUNNER_USER@$RUNNER_HOST:~/$REMOTE_WORK/runner"
+
+      - name: Build + measure on server
+        run: |
+          set -Eeuo pipefail
+          ssh $SSH_OPTS -i ~/.ssh/runner_key -p "$RUNNER_PORT" "$RUNNER_USER@$RUNNER_HOST" \
+            "WORK_DIR=\$HOME/$REMOTE_WORK/work bash \$HOME/$REMOTE_WORK/runner/run_all.sh"
+
+      - name: Fetch artifacts
+        run: |
+          set -Eeuo pipefail
+          mkdir -p artifacts
+          for f in build_meta.json benchmark.csv primitives.csv; do
+            scp $SSH_OPTS -i ~/.ssh/runner_key -P "$RUNNER_PORT" \
+              "$RUNNER_USER@$RUNNER_HOST:~/$REMOTE_WORK/work/$f" "artifacts/$f"
+          done
+
+      - name: Aggregate summary.json
+        id: agg
+        run: |
+          set -Eeuo pipefail
+          run_id="$(python3 runner/aggregate.py \
+            --meta artifacts/build_meta.json \
+            --benchmark artifacts/benchmark.csv \
+            --primitives artifacts/primitives.csv \
+            --out artifacts/summary.json)"
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+          echo "Aggregated run: $run_id"
+
+      - name: Commit summary to inbox
+        run: |
+          set -Eeuo pipefail
+          run_id="${{ steps.agg.outputs.run_id }}"
+          dest="data/to_process/$run_id"
+          mkdir -p "$dest"
+          cp artifacts/summary.json "$dest/summary.json"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$dest/summary.json"
+
+          if git diff --cached --quiet; then
+            echo "No new summary to commit."
+          else
+            git commit -m "Add daily performance run $run_id"
+            pushed=0
+            for i in 1 2 3 4 5; do
+              if git pull --rebase --autostash origin main && git push; then pushed=1; break; fi
+              echo "push attempt $i failed; retrying..." >&2
+              sleep $((RANDOM % 10 + 5))
+            done
+            [ "$pushed" = 1 ] || { echo "::error::failed to push summary after retries"; exit 1; }
+          fi
+
+      - name: Clean up server work dir
+        if: always()
+        run: |
+          ssh $SSH_OPTS -i ~/.ssh/runner_key -p "$RUNNER_PORT" "$RUNNER_USER@$RUNNER_HOST" "rm -rf ~/$REMOTE_WORK" || true
