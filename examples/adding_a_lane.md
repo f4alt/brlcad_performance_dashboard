@@ -55,11 +55,10 @@ See `scripts/summary.schema.json` for the authoritative contract. A lane is read
     "repository": "f4alt/brlcad",
     "workflow_url": "https://github.com/f4alt/brlcad/actions/runs/123"
   },
-  "lane_order": ["benchmark", "rtcmp_prims", "rtcmp_generic"],
+  "lane_order": ["benchmark", "primitives"],
   "lanes": {
     "<lane>": {
       "description": "human-readable lane description",
-      "status": "PASS | FAIL | SKIP",
       "columns": ["column_a", "column_b"],
       "rows": [ { "column_a": "value", "column_b": 123 } ]
     }
@@ -67,7 +66,9 @@ See `scripts/summary.schema.json` for the authoritative contract. A lane is read
 }
 ```
 
-A missing lane is normal — processors must treat it as non-fatal.
+There is no lane/row `status` — a lane is present only when it has results. A producer
+that fails to measure a lane should omit it (and upload nothing if no lane succeeded). A
+missing lane is normal; processors must treat it as non-fatal.
 
 ## Step 1: Add a lane processor
 
@@ -81,7 +82,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from .common import as_status, rows_from_lane, run_info_from_record, write_json
+from .common import rows_from_lane, run_info_from_record, write_json
 
 LANE_NAME = "<lane>"
 LANE_TITLE = "<Lane Title>"   # shown in the dashboard manifest
@@ -97,8 +98,6 @@ def process(records: list[dict[str, Any]], out_dir: Path, generated_at: str) -> 
         lanes = record.get("lanes", {})
         lane = lanes.get(LANE_NAME) if isinstance(lanes, dict) else None
         if not isinstance(lane, dict):
-            continue
-        if as_status(lane.get("status")) != "PASS":
             continue
         rows = rows_from_lane(lane)
         if not rows:
@@ -141,7 +140,6 @@ Add to `site/index.html` (ids must be prefixed with the lane name):
       <p class="eyebrow">Lane</p>
       <h2><Lane Title></h2>
     </div>
-    <span class="status-pill" id="<lane>-status">Loading…</span>
   </div>
 
   <div id="<lane>-message" class="notice muted">Loading lane data…</div>
@@ -154,7 +152,7 @@ Add to `site/index.html` (ids must be prefixed with the lane name):
 Create `site/js/lanes/<lane>.js` (must export `init`):
 
 ```javascript
-import { checkSchemaVersion, escapeHtml, fetchJson, formatNumber, setStatus } from "../utils.js";
+import { checkSchemaVersion, escapeHtml, fetchJson, formatNumber } from "../utils.js";
 
 function renderRows(rows) {
   if (!rows || rows.length === 0) {
@@ -176,7 +174,6 @@ export async function init() {
   const latest = await fetchJson("data/<lane>/latest.json");
   checkSchemaVersion(latest, "<lane>/latest.json");
 
-  setStatus(document.getElementById("<lane>-status"), latest.rows?.length ? "PASS" : "UNKNOWN");
   document.getElementById("<lane>-message").textContent = latest.source_run
     ? `Showing data from ${latest.source_run.id}`
     : "No source run is available yet.";

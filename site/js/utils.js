@@ -9,18 +9,6 @@ export function escapeHtml(value) {
     .replaceAll("'", '&#39;');
 }
 
-export function statusClass(status) {
-  const normalized = fmt(status).trim().toUpperCase() || 'UNKNOWN';
-  return `status-${normalized}`;
-}
-
-export function setStatus(el, status) {
-  if (!el) return;
-  const normalized = fmt(status).trim().toUpperCase() || 'UNKNOWN';
-  el.textContent = normalized;
-  el.className = `status-pill ${statusClass(normalized)}`;
-}
-
 export function formatNumber(value, options = {}) {
   if (value == null || value === '') {
     return '—';
@@ -134,17 +122,11 @@ export function sourceHref(run) {
   return commitHref(run) || '#';
 }
 
-export function runOptionLabel(run, status = null) {
-  const parts = [
+export function runOptionLabel(run) {
+  return [
     formatShortTimestamp(run?.timestamp),
     run?.short_commit || run?.commit || 'unknown commit',
-  ];
-
-  if (status) {
-    parts.push(status);
-  }
-
-  return parts.join(' · ');
+  ].join(' · ');
 }
 
 function scale(value, inMin, inMax, outMin, outMax) {

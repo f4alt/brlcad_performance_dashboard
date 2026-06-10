@@ -1,10 +1,13 @@
 # BRL-CAD Performance Dashboard
 
-Static GitHub Pages dashboard for BRL-CAD performance runs. Producers (the BRL-CAD
-performance workflow, and a planned self-hosted daily runner) drop immutable
-`summary.json` packages into an inbox. CI ingests them into a durable, append-only
-master log, derives compact lane-specific dashboard data, and deploys a lightweight
-frontend for viewing latest results and historical trends.
+Static GitHub Pages dashboard for BRL-CAD performance runs. A daily self-hosted runner
+(`runner/`, driven by `.github/workflows/run_daily.yml`) builds current BRL-CAD on
+consistent hardware and measures **absolute** metrics (benchmark VGR, per-primitive
+rays/sec) so the trend over time is the regression signal. Producers drop immutable
+`summary.json` packages into an inbox; CI ingests them into a durable, append-only master
+log, derives compact lane-specific dashboard data, and deploys a lightweight frontend for
+viewing latest results and historical trends. External producers can still push their own
+`summary.json` into the same inbox.
 
 ## Data model: durable vs ephemeral
 
@@ -32,10 +35,18 @@ downloads the full master.
 ```text
 .github/workflows/
   ingest_and_deploy.yml     # ingests the inbox, builds + deploys GitHub Pages
+  run_daily.yml             # daily: SSH to the server, build+measure, push to the inbox
 
 data/
   to_process/               # inbox of incoming run packages (transient)
   master/results.jsonl      # durable append-only master log (source of truth)
+
+runner/                     # server-side build + measure scripts; emit summary.json
+  run_all.sh                # orchestrates build -> measure -> aggregate
+  build.sh                  # clean build of current BRL-CAD main (+ bext)
+  measure_benchmark.sh      # absolute VGR
+  measure_primitives.sh     # per-primitive rays/sec (stub: rt vs primitives.g)
+  aggregate.py              # writes the contract summary.json
 
 scripts/
   ingest_summary.py         # validates inbox, appends to master, builds derived data
@@ -91,10 +102,18 @@ generated `data/lanes.json` manifest, so adding a lane needs no edits to
   belong in the inbox — keep those as short-retention GitHub Actions artifacts.
 
 - **Treat `summary.json` as a schema contract.** Ingestion and lane processors depend on
-  stable `run.*` metadata and per-lane row fields (`build`, `vgr`, `prim`,
-  `rays_per_sec`, `perf_delta_percent`, …). If the producer changes the shape, bump
-  `schema_version`, update `scripts/summary.schema.json`, and adjust the relevant lane
-  processor.
+  stable `run.*` metadata and per-lane row fields (benchmark: `build`, `vgr`; primitives:
+  `prim`, `rays_per_sec`). If the producer changes the shape, bump `schema_version`, update
+  `scripts/summary.schema.json`, and adjust the relevant lane processor.
+
+- **No lane/row status.** There is no pass/fail field. A lane (or a primitive row) is
+  present only when it was successfully measured; a failed lane is simply omitted from
+  `summary.json`, and a run with no lanes is not uploaded at all.
+
+- **Per-primitive is a stub.** `runner/measure_primitives.sh` currently approximates
+  rays/sec via `rt` against the bundled `share/db/primitives.g`; it is designed to be
+  replaced by a comprehensive in-BRL-CAD per-primitive runner at the isolated measurement
+  function.
 
 - **Master sharding.** `data/master/results.jsonl` is append-only and rolls to
   `results-002.jsonl` near ~50 MB (≈ a decade of daily runs), well before GitHub's

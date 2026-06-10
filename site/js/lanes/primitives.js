@@ -6,7 +6,6 @@ import {
   formatTimestamp,
   renderLineChart,
   runOptionLabel,
-  setStatus,
   sourceHref,
 } from '../utils.js';
 
@@ -55,7 +54,6 @@ function renderPrimitiveChart(series, prim) {
       `Rays/sec: ${formatNumber(point.rays_per_sec)}`,
       `Commit: ${point.short_commit || point.commit || 'unknown'}`,
       `Timestamp: ${point.timestamp || 'unknown'}`,
-      `Status: ${point.status || 'unknown'}`,
     ].join('\n'),
     href: (point) => sourceHref(point),
   });
@@ -63,21 +61,20 @@ function renderPrimitiveChart(series, prim) {
 
 export async function init() {
   const [latest, series] = await Promise.all([
-    fetchJson('data/rtcmp_prims/latest.json'),
-    fetchJson('data/rtcmp_prims/trend.json', { cache: 'default' }),
+    fetchJson('data/primitives/latest.json'),
+    fetchJson('data/primitives/trend.json', { cache: 'default' }),
   ]);
-  checkSchemaVersion(latest, 'rtcmp_prims/latest.json');
-  checkSchemaVersion(series, 'rtcmp_prims/trend.json');
+  checkSchemaVersion(latest, 'primitives/latest.json');
+  checkSchemaVersion(series, 'primitives/trend.json');
 
-  const statusEl = document.getElementById('rtcmp_prims-status');
-  const messageEl = document.getElementById('rtcmp_prims-message');
-  const runSelectEl = document.getElementById('rtcmp_prims-run-select');
-  const countEl = document.getElementById('rtcmp_prims-count');
-  const tableEl = document.getElementById('rtcmp_prims-table');
-  const overlayEl = document.getElementById('rtcmp_prims-overlay');
-  const closeEl = document.getElementById('rtcmp_prims-overlay-close');
-  const chartTitleEl = document.getElementById('rtcmp_prims-chart-title');
-  const chartEl = document.getElementById('rtcmp_prims-chart');
+  const messageEl = document.getElementById('primitives-message');
+  const runSelectEl = document.getElementById('primitives-run-select');
+  const countEl = document.getElementById('primitives-count');
+  const tableEl = document.getElementById('primitives-table');
+  const overlayEl = document.getElementById('primitives-overlay');
+  const closeEl = document.getElementById('primitives-overlay-close');
+  const chartTitleEl = document.getElementById('primitives-chart-title');
+  const chartEl = document.getElementById('primitives-chart');
 
   const runs = latest.runs || [];
 
@@ -87,7 +84,6 @@ export async function init() {
   if (latest.source_run?.id) {
     detailCache.set(latest.source_run.id, {
       run: latest.source_run,
-      status: latest.status,
       summary: latest.summary || {},
       rows: latest.rows || [],
     });
@@ -95,7 +91,7 @@ export async function init() {
 
   runSelectEl.innerHTML = runs.length
     ? runs.map((run) => `
-        <option value="${escapeHtml(run.id)}">${escapeHtml(runOptionLabel(run, run.status))}</option>
+        <option value="${escapeHtml(run.id)}">${escapeHtml(runOptionLabel(run))}</option>
       `).join('')
     : '<option value="">No primitive datasets available</option>';
   runSelectEl.disabled = runs.length === 0;
@@ -111,7 +107,7 @@ export async function init() {
     if (detailCache.has(run.id)) {
       return detailCache.get(run.id);
     }
-    const detail = await fetchJson(`data/rtcmp_prims/runs/${run.detail}`, { cache: 'default' });
+    const detail = await fetchJson(`data/primitives/runs/${run.detail}`, { cache: 'default' });
     detailCache.set(run.id, detail);
     return detail;
   }
@@ -131,7 +127,6 @@ export async function init() {
     const run = selectedRun();
 
     if (!run) {
-      setStatus(statusEl, 'UNKNOWN');
       messageEl.textContent = 'No primitive performance data has been ingested yet.';
       countEl.textContent = '';
       tableEl.innerHTML = '<p class="muted">No primitive rows available.</p>';
@@ -148,13 +143,10 @@ export async function init() {
     }
 
     const rows = snapshot?.rows || [];
-    const summary = snapshot?.summary || {};
 
-    setStatus(statusEl, snapshot?.status || 'UNKNOWN');
     messageEl.classList.remove('fail');
-    messageEl.classList.toggle('warn', snapshot?.status !== 'PASS');
     messageEl.innerHTML = `
-      Showing ${formatNumber(summary.passing || 0)} passing and ${formatNumber(summary.failing || 0)} failing primitive rows from
+      Showing ${formatNumber(rows.length)} primitive rows from
       <code>${escapeHtml(run.id || 'unknown run')}</code> · ${escapeHtml(formatTimestamp(run.timestamp))}.
     `;
 

@@ -62,5 +62,4 @@ temp/
 /data/index.json
 /data/lanes.json
 /data/benchmark/
-/data/rtcmp_prims/
-/data/rtcmp_generic/
+/data/primitives/

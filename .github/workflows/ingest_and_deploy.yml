@@ -78,7 +78,6 @@ jobs:
           print(f"Latest run `{latest.get('id')}`")
           print("")
           print(f"- Timestamp: `{latest.get('timestamp')}`")
-          print(f"- Status: `{latest.get('status')}`")
 
           repository = latest.get("repository")
           commit = latest.get("commit")
@@ -89,13 +88,6 @@ jobs:
 
           if latest.get("workflow_url"):
               print(f"- Source workflow: {latest['workflow_url']}")
-
-          lanes = latest.get("lanes") or {}
-          if lanes:
-              print("")
-              print("Lanes:")
-              for name, lane_status in lanes.items():
-                  print(f"- `{name}`: `{lane_status}`")
           PY
 
       # Publish the freshly built _site BEFORE the git commit, so persisting the

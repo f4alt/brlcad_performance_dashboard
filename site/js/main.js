@@ -1,4 +1,28 @@
-import { commitHref, escapeHtml, fetchJson, formatTimestamp, setStatus, sourceHref } from './utils.js';
+import { commitHref, escapeHtml, fetchJson, formatNumber, formatTimestamp, sourceHref } from './utils.js';
+
+function renderRunEnvironment(system) {
+  if (!system || typeof system !== 'object') {
+    return '';
+  }
+
+  const cell = (label, value) =>
+    value == null || value === ''
+      ? ''
+      : `<div><p class="eyebrow">${escapeHtml(label)}</p><span>${escapeHtml(String(value))}</span></div>`;
+
+  return [
+    cell('OS', system.os),
+    cell('CPU', system.cpu),
+    cell('Cores', system.cores),
+    cell('Compiler', system.compiler),
+    system.build_seconds != null
+      ? `<div><p class="eyebrow">Build time</p><span>${escapeHtml(formatNumber(system.build_seconds))} s</span></div>`
+      : '',
+    system.peak_rss_mb != null
+      ? `<div><p class="eyebrow">Peak RSS</p><span>${escapeHtml(formatNumber(system.peak_rss_mb))} MB</span></div>`
+      : '',
+  ].join('');
+}
 
 function renderLatestUpload(latest) {
   const el = document.getElementById('latest-upload');
@@ -30,15 +54,12 @@ function renderLatestUpload(latest) {
         : `<code>${escapeHtml(commitLabel)}</code>`}
     </div>
     <div>
-      <p class="eyebrow">Overall status</p>
-      <span class="status-pill ${escapeHtml(`status-${latest.status || 'UNKNOWN'}`)}">${escapeHtml(latest.status || 'UNKNOWN')}</span>
-    </div>
-    <div>
       <p class="eyebrow">Source</p>
       ${srcHref && srcHref !== '#'
         ? `<a href="${escapeHtml(srcHref)}" target="_blank" rel="noopener noreferrer">source run</a>`
         : '<span class="muted">—</span>'}
     </div>
+    ${renderRunEnvironment(latest.system)}
   `;
 }
 
@@ -52,10 +73,9 @@ async function initLane(name, title) {
   } catch (error) {
     console.error(`Failed to initialize ${name}`, error);
 
-    setStatus(document.getElementById(`${name}-status`), 'UNKNOWN');
-
     const messageEl = document.getElementById(`${name}-message`);
     if (messageEl) {
+      messageEl.hidden = false;
       messageEl.classList.add('fail');
       messageEl.textContent = `Failed to load ${title || name}: ${error.message}`;
     }

@@ -1,5 +1,10 @@
 # Connect a BRL-CAD performance runner to the dashboard repo
 
+> The primary producer is this repo's own daily runner (`runner/` +
+> `.github/workflows/run_daily.yml`), which builds BRL-CAD on a consistent server and
+> pushes to the inbox directly. This document covers an **external** producer (e.g. a
+> separate CI workflow) that wants to push its own `summary.json` into the same inbox.
+
 This repo ingests incoming results committed to its inbox:
 
 ~~~text

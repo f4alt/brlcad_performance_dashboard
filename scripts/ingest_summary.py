@@ -30,7 +30,7 @@ from pathlib import Path
 from typing import Any
 
 import lane_processors
-from lane_processors.common import as_status, write_json
+from lane_processors.common import write_json
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT / "data"
@@ -102,8 +102,8 @@ def _hand_rolled_errors(summary: dict[str, Any]) -> list[str]:
         for name, lane in lanes.items():
             if not isinstance(lane, dict):
                 errors.append(f"lane '{name}' must be an object")
-            elif not str(lane.get("status") or "").strip():
-                errors.append(f"lane '{name}' is missing 'status'")
+            elif not isinstance(lane.get("rows"), list):
+                errors.append(f"lane '{name}' must have a 'rows' array")
 
     return errors
 
@@ -145,28 +145,16 @@ def normalize_lanes(summary: dict[str, Any]) -> dict[str, dict[str, Any]]:
     return {}
 
 
-def overall_status_from_lanes(lane_statuses: dict[str, str]) -> str:
-    if not lane_statuses:
-        return "UNKNOWN"
-    if any(status == "FAIL" for status in lane_statuses.values()):
-        return "FAIL"
-    if any(status == "UNKNOWN" for status in lane_statuses.values()):
-        return "UNKNOWN"
-    if all(status == "SKIP" for status in lane_statuses.values()):
-        return "SKIP"
-    return "PASS"
-
-
-def build_run_info(summary: dict[str, Any], lanes: dict[str, dict[str, Any]], run_id: str) -> dict[str, Any]:
+def build_run_info(summary: dict[str, Any], run_id: str) -> dict[str, Any]:
     run = summary.get("run")
     if not isinstance(run, dict):
         run = {}
 
-    lane_statuses = {name: as_status(lane.get("status")) for name, lane in sorted(lanes.items())}
     timestamp = parse_timestamp(run.get("timestamp") or summary.get("generated_at"), EPOCH)
     commit = run.get("commit")
     short_commit = str(run.get("short_commit") or commit or "")[:12] or None
     repository = run.get("repository") or run.get("repo")
+    system = run.get("system") if isinstance(run.get("system"), dict) else None
 
     return {
         "id": run_id,
@@ -179,8 +167,7 @@ def build_run_info(summary: dict[str, Any], lanes: dict[str, dict[str, Any]], ru
         "workflow": run.get("workflow"),
         "workflow_run_id": run.get("workflow_run_id"),
         "workflow_url": run.get("workflow_url"),
-        "status": overall_status_from_lanes(lane_statuses),
-        "lanes": lane_statuses,
+        "system": system,
     }
 
 
@@ -191,7 +178,7 @@ def to_processor_record(master_record: dict[str, Any]) -> dict[str, Any]:
     lanes = normalize_lanes(source)
     run = source.get("run") if isinstance(source.get("run"), dict) else {}
     run_id = str(master_record.get("run_id") or run.get("id") or "")
-    return {"summary": source, "lanes": lanes, "index": build_run_info(source, lanes, run_id)}
+    return {"summary": source, "lanes": lanes, "index": build_run_info(source, run_id)}
 
 
 # ---------------------------------------------------------------------------

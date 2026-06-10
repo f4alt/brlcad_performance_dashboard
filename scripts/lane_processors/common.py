@@ -15,10 +15,6 @@ from typing import Any
 _FILENAME_SAFE = re.compile(r"[^A-Za-z0-9._-]+")
 
 
-def as_status(value: Any) -> str:
-    return str(value or "UNKNOWN").strip().upper() or "UNKNOWN"
-
-
 def to_float(value: Any) -> float | None:
     if value is None or value == "":
         return None
@@ -85,13 +81,12 @@ def safe_run_filename(run_id: str) -> str:
     return f"{cleaned}.json"
 
 
-def thin_run(run_info: dict[str, Any], status: str) -> dict[str, Any]:
+def thin_run(run_info: dict[str, Any]) -> dict[str, Any]:
     """A small descriptor used to populate run-picker dropdowns (no rows)."""
     run_id = run_info.get("id")
     return {
         "id": run_id,
         "timestamp": run_info.get("timestamp"),
         "short_commit": run_info.get("short_commit"),
-        "status": status,
         "detail": safe_run_filename(run_id),
     }

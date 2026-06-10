@@ -33,27 +33,35 @@
         "repository": {"type": "string", "description": "owner/name of the source repo (used for commit links)."},
         "workflow": {"type": "string"},
         "workflow_run_id": {"type": ["string", "integer"]},
-        "workflow_url": {"type": "string", "description": "URL of the source CI run (used for the source link)."}
+        "workflow_url": {"type": "string", "description": "URL of the source CI run (used for the source link)."},
+        "system": {
+          "type": "object",
+          "description": "Optional run environment captured by the self-hosted runner (surfaced on the dashboard). Permissive.",
+          "properties": {
+            "os": {"type": "string"},
+            "cpu": {"type": "string"},
+            "cores": {"type": ["integer", "string"]},
+            "compiler": {"type": "string"},
+            "build_flags": {"type": "string"},
+            "build_seconds": {"type": ["number", "null"]},
+            "peak_rss_mb": {"type": ["number", "null"]}
+          }
+        }
       }
     },
-    "overall_status": {"type": "string"},
     "lanes": {
       "type": "object",
       "minProperties": 1,
-      "description": "Map of lane-name -> lane payload. Each lane processor reads only its own lane.",
+      "description": "Map of lane-name -> lane payload. A lane is present only when it has results; there is no per-lane status (a failed lane is simply omitted). Each lane processor reads only its own lane.",
       "additionalProperties": {
         "type": "object",
-        "required": ["status"],
+        "required": ["rows"],
         "properties": {
-          "status": {
-            "type": "string",
-            "description": "Lane status. Compared case-insensitively against PASS/FAIL/SKIP/UNKNOWN."
-          },
           "description": {"type": "string"},
           "columns": {"type": "array", "items": {"type": "string"}},
           "rows": {
             "type": "array",
-            "description": "Object rows. Field names per lane: benchmark needs build+vgr; rtcmp_prims needs prim+rays_per_sec(+status); rtcmp_generic uses the perf*/compare_status/perf_delta_percent columns.",
+            "description": "Object rows. Field names per lane: benchmark needs build+vgr; primitives needs prim+rays_per_sec.",
             "items": {"type": "object"}
           }
         }
