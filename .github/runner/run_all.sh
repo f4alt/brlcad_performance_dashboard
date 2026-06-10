@@ -6,7 +6,7 @@
 #
 # It deliberately does NOT aggregate into summary.json or require python3 on the
 # server — the scheduling workflow scp's these artifacts back and runs
-# runner/aggregate.py on the GitHub runner.
+# .github/runner/aggregate.py on the GitHub runner.
 #
 # Inputs (env): WORK_DIR (required) + any knobs honored by the sub-scripts.
 
