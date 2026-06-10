@@ -1,0 +1,4 @@
+# Runtime dependencies for scripts/ingest_summary.py (CI ingest).
+# jsonschema makes scripts/summary.schema.json the authoritative contract check;
+# without it, ingest falls back to looser built-in validation.
+jsonschema>=4.18

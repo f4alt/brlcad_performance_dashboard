@@ -1,6 +1,8 @@
-"""Generic rtcmp lane ingestion for the BRL-CAD performance dashboard.
+"""Generic rtcmp lane derived data for the BRL-CAD performance dashboard.
 
-This module owns only data/rtcmp_generic/* derived files.
+Writes (into <out_dir>/rtcmp_generic/):
+  latest.json      - latest comparison table + chip summary + thin run list
+  runs/<id>.json   - full table for one run, fetched on demand by the picker
 """
 
 from __future__ import annotations
@@ -8,9 +10,19 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from .common import as_status, rows_from_lane, run_info_from_upload, to_float, to_nonnegative_float, write_json
+from .common import (
+    as_status,
+    rows_from_lane,
+    run_info_from_record,
+    safe_run_filename,
+    thin_run,
+    to_float,
+    to_nonnegative_float,
+    write_json,
+)
 
 LANE_NAME = "rtcmp_generic"
+LANE_TITLE = "Generic Raytrace Comparison"
 
 VISIBLE_COLUMNS = [
     "status",
@@ -45,6 +57,8 @@ NONNEGATIVE_FIELDS = {
     "perf2_rays_per_sec_wall",
 }
 
+_EMPTY_SUMMARY = {"row_count": 0, "passing": 0, "failing": 0, "average_delta_percent": None}
+
 
 def _normalize_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     normalized: list[dict[str, Any]] = []
@@ -55,10 +69,9 @@ def _normalize_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         for key in NUMERIC_FIELDS:
             if key not in item:
                 continue
-
             item[key] = to_nonnegative_float(item[key]) if key in NONNEGATIVE_FIELDS else to_float(item[key])
 
-        for key in ["status", "compare_status", "perf_status"]:
+        for key in ("status", "compare_status", "perf_status"):
             if key in item:
                 item[key] = as_status(item[key])
 
@@ -68,7 +81,7 @@ def _normalize_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 
 def _row_passes(row: dict[str, Any]) -> bool:
-    for key in ["status", "compare_status", "perf_status"]:
+    for key in ("status", "compare_status", "perf_status"):
         status = row.get(key)
         if status and as_status(status) != "PASS":
             return False
@@ -81,7 +94,6 @@ def _summarize_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
 
     deltas = [row.get("perf_delta_percent") for row in rows]
     deltas = [delta for delta in deltas if isinstance(delta, (int, float))]
-
     average_delta = sum(deltas) / len(deltas) if deltas else None
 
     return {
@@ -92,13 +104,13 @@ def _summarize_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def process(uploads: list[dict[str, Any]], root: Path, generated_at: str) -> None:
-    out_dir = root / "data" / LANE_NAME
+def process(records: list[dict[str, Any]], out_dir: Path, generated_at: str) -> None:
+    lane_dir = out_dir / LANE_NAME
 
     snapshots: list[dict[str, Any]] = []
 
-    for upload in uploads:
-        lanes = upload.get("lanes", {})
+    for record in records:
+        lanes = record.get("lanes", {})
         if not isinstance(lanes, dict):
             continue
 
@@ -110,40 +122,44 @@ def process(uploads: list[dict[str, Any]], root: Path, generated_at: str) -> Non
         if not rows:
             continue
 
+        columns = list(lane.get("columns", [])) if isinstance(lane.get("columns"), list) else []
         snapshots.append({
-            "run": run_info_from_upload(upload),
+            "run": run_info_from_record(record),
             "status": as_status(lane.get("status")),
-            "columns": list(lane.get("columns", [])) if isinstance(lane.get("columns"), list) else [],
+            "columns": columns,
             "visible_columns": VISIBLE_COLUMNS,
             "summary": _summarize_rows(rows),
             "rows": rows,
         })
 
-    latest_snapshot = snapshots[-1] if snapshots else None
+    # Per-run detail files (fetched on demand by the run picker).
+    for snapshot in snapshots:
+        run_id = snapshot["run"].get("id")
+        write_json(lane_dir / "runs" / safe_run_filename(run_id), {
+            "schema_version": 1,
+            "generated_at": generated_at,
+            "lane": LANE_NAME,
+            "run": snapshot["run"],
+            "status": snapshot["status"],
+            "columns": snapshot["columns"],
+            "visible_columns": snapshot["visible_columns"],
+            "summary": snapshot["summary"],
+            "rows": snapshot["rows"],
+        })
+
+    latest = snapshots[-1] if snapshots else None
 
     latest_payload = {
         "schema_version": 1,
         "generated_at": generated_at,
         "lane": LANE_NAME,
-        "source_run": latest_snapshot.get("run") if latest_snapshot else None,
-        "status": latest_snapshot.get("status") if latest_snapshot else "UNKNOWN",
-        "columns": latest_snapshot.get("columns", []) if latest_snapshot else [],
+        "source_run": latest.get("run") if latest else None,
+        "status": latest.get("status") if latest else "UNKNOWN",
+        "columns": latest.get("columns", []) if latest else [],
         "visible_columns": VISIBLE_COLUMNS,
-        "summary": latest_snapshot.get("summary") if latest_snapshot else {
-            "row_count": 0,
-            "passing": 0,
-            "failing": 0,
-            "average_delta_percent": None,
-        },
-        "rows": latest_snapshot.get("rows", []) if latest_snapshot else [],
+        "summary": latest.get("summary") if latest else dict(_EMPTY_SUMMARY),
+        "rows": latest.get("rows", []) if latest else [],
+        "runs": [thin_run(s["run"], s["status"]) for s in reversed(snapshots)],
     }
 
-    runs_payload = {
-        "schema_version": 1,
-        "generated_at": generated_at,
-        "lane": LANE_NAME,
-        "snapshots": list(reversed(snapshots)),
-    }
-
-    write_json(out_dir / "latest.json", latest_payload)
-    write_json(out_dir / "runs.json", runs_payload)
+    write_json(lane_dir / "latest.json", latest_payload)

@@ -1,64 +1,105 @@
 # BRL-CAD Performance Dashboard
 
-Static GitHub Pages dashboard for BRL-CAD performance runs. The BRL-CAD performance workflow uploads immutable `summary.json` packages, this repo ingests them, derives lane-specific dashboard data, and deploys a lightweight frontend for viewing latest results and historical trends.
+Static GitHub Pages dashboard for BRL-CAD performance runs. Producers (the BRL-CAD
+performance workflow, and a planned self-hosted daily runner) drop immutable
+`summary.json` packages into an inbox. CI ingests them into a durable, append-only
+master log, derives compact lane-specific dashboard data, and deploys a lightweight
+frontend for viewing latest results and historical trends.
+
+## Data model: durable vs ephemeral
+
+The repository tracks only two kinds of data:
+
+```text
+data/
+  to_process/            # INBOX — transient. Producers commit summaries here.
+    <run-id>/summary.json
+    .gitkeep
+  master/                # DURABLE — the source of truth (committed, grows slowly).
+    results.jsonl        # append-only, newest-last, one JSON object per run:
+                         #   {"run_id","ingested_at","timestamp","source":<raw summary>}
+                         # rolls to results-002.jsonl etc. near ~50 MB.
+```
+
+Everything the browser fetches (`data/index.json`, `data/lanes.json`,
+`data/<lane>/*.json`) is **derived** — regenerated from `data/master/` into the Pages
+deploy artifact on every run and **never committed** (it is `.gitignore`d). This keeps
+git history near-linear instead of ballooning quadratically, and the browser never
+downloads the full master.
 
 ## Repository layout
 
 ```text
 .github/workflows/
-  ack-ingest.yml            # ingests uploaded summaries and deploys GitHub Pages
+  ingest_and_deploy.yml     # ingests the inbox, builds + deploys GitHub Pages
 
 data/
-  uploads/<run-id>/         # immutable uploaded run packages from BRL-CAD
-    summary.json            # canonical per-run summary
-  index.json                # generated global upload index
-  benchmark/                # generated benchmark lane data
-  rtcmp_prims/              # generated primitive-performance lane data
-  rtcmp_generic/            # generated generic-comparison lane data
+  to_process/               # inbox of incoming run packages (transient)
+  master/results.jsonl      # durable append-only master log (source of truth)
 
 scripts/
-  ingest_summary.py         # validates uploads, builds the index, runs lane processors
-  lane_processors/          # one processor per dashboard lane
+  ingest_summary.py         # validates inbox, appends to master, builds derived data
+  summary.schema.json       # the summary.json contract (validation + documentation)
+  lane_processors/          # one processor per dashboard lane (auto-discovered)
 
 site/
-  index.html                # static dashboard shell
+  index.html                # static dashboard shell (one <section> per lane)
   css/                      # dashboard styling
-  js/                       # shared frontend code and lane modules
-    lanes/                  # one frontend module per dashboard lane
+  js/
+    main.js                 # loads index + lane manifest, dynamic-imports each lane
+    utils.js                # shared formatting/loading helpers
+    lanes/<lane>.js         # one frontend module per lane (exports init())
 
-examples/                   # potentially useful patterns for using the dashboard
+examples/                   # integration patterns (pushing data, adding a lane)
 ```
 
 ## Data flow
 
 ```text
-BRL-CAD performance workflow
-  -> data/uploads/<run-id>/summary.json
-  -> scripts/ingest_summary.py
-  -> data/index.json + data/<lane>/*.json
-  -> GitHub Pages deploys site/ plus generated data/
+producer (BRL-CAD perf workflow / daily runner)
+  -> data/to_process/<run-id>/summary.json        (committed to the inbox)
+  -> ingest_summary.py
+       validate -> append raw record to data/master/results.jsonl (newest-last)
+                -> delete the processed inbox entry
+                -> regenerate compact derived data into _site/data/
+  -> commit master + pruned inbox  ([skip ci])
+  -> GitHub Pages deploys site/ + freshly built _site/data/
 ```
 
-Only `summary.json` is required from each upload package. Extra CSVs and logs may be kept alongside it for audit/debugging, but generated dashboard data should be reproducible from the uploaded summaries.
+`summary.json` is the only required input. See `scripts/summary.schema.json` for the
+exact contract; bad summaries are quarantined (left in `data/to_process/`) and turn the
+run red without blocking the rest.
 
 ## Lane pattern
 
-Each lane owns its backend processor, frontend module, and generated data directory:
+Each lane owns one backend processor, one frontend module, and one dashboard section:
 
 ```text
-scripts/lane_processors/<lane>.py
-site/js/lanes/<lane>.js
-data/<lane>/
+scripts/lane_processors/<lane>.py     # exposes LANE_NAME, LANE_TITLE, process(records, out_dir, generated_at)
+site/js/lanes/<lane>.js               # exports init()
+site/index.html                       # <section id="<lane>-section"> ... ids prefixed with <lane>-
 ```
 
-The ingest script should stay lane-agnostic: it loads uploaded summaries, builds the global index, and calls registered lane processors. See `examples/adding_a_lane.md` for the expected pattern.
+Backends are auto-discovered (no central registry), and the frontend is driven by the
+generated `data/lanes.json` manifest, so adding a lane needs no edits to
+`ingest_summary.py`, `main.js`, or the workflow. See `examples/adding_a_lane.md`.
 
-## Important Notes / Future Work
+## Important notes / future work
 
-A few long-term considerations are worth keeping in mind as the dashboard grows:
+- **Keep inbox uploads small.** `summary.json` is the durable record (it is copied
+  verbatim into the master). Large logs, raw dumps, build artifacts, and images do not
+  belong in the inbox — keep those as short-retention GitHub Actions artifacts.
 
-- **Keep uploads small.** `data/uploads/<run-id>/summary.json` is intended to be the durable source of truth for each performance run. Small CSV summaries are reasonable to archive alongside it, but large logs, raw dumps, build artifacts, images, and full debug packages should not be committed here. Those are better kept as short-retention GitHub Actions artifacts.
+- **Treat `summary.json` as a schema contract.** Ingestion and lane processors depend on
+  stable `run.*` metadata and per-lane row fields (`build`, `vgr`, `prim`,
+  `rays_per_sec`, `perf_delta_percent`, …). If the producer changes the shape, bump
+  `schema_version`, update `scripts/summary.schema.json`, and adjust the relevant lane
+  processor.
 
-- **Treat `summary.json` as a schema contract.** The dashboard ingestion scripts depend on stable lane names, run metadata, and row fields such as `build`, `vgr`, `prim`, `rays_per_sec`, and `perf_delta_percent`. If the BRL-CAD runner changes the shape of `summary.json`, update the schema version and adjust the relevant lane processor.
+- **Master sharding.** `data/master/results.jsonl` is append-only and rolls to
+  `results-002.jsonl` near ~50 MB (≈ a decade of daily runs), well before GitHub's
+  100 MB single-file limit. Old shards are immutable and pack once.
 
-- **`data/` is re-indexed on every ingest run.** The current pipeline scans all uploaded summaries, rebuilds `data/index.json`, regenerates lane-specific derived JSON, and deploys the site. This is simple and reproducible, but it means the cost of ingestion grows with the number and size of archived uploads. If this becomes expensive, future work should move toward cached or incremental indexing while preserving the ability to fully regenerate from `data/uploads/`.
+- **Retention.** The master grows linearly (~13 KB/run). If long-term size becomes a
+  concern, cold-archive the oldest shards (e.g. to release assets) — derived data is
+  always reproducible from whatever shards remain.

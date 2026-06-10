@@ -1,9 +1,16 @@
-# Connect BRL-CAD Performance Runner to Dashboard Repo auto-deploy
+# Connect a BRL-CAD performance runner to the dashboard repo
 
-This repo expects incoming data to be committed as
+This repo ingests incoming results committed to its inbox:
+
 ~~~text
-data/runs/<timestamp>-<commit>/summary.json
+data/to_process/<run-id>/summary.json
 ~~~
+
+A push to `data/to_process/**/summary.json` triggers the dashboard's
+`ingest_and_deploy.yml` workflow, which validates the summary, appends it to the durable
+master log, prunes the inbox, and redeploys the site. `<run-id>` is any unique directory
+name (a `<timestamp>-<short-sha>` works well); the canonical identity actually used for
+de-duplication is `run.id` **inside** the summary, so make sure that is set.
 
 ## 1. Create a dedicated SSH deploy key
 
@@ -13,14 +20,8 @@ Run locally:
 ssh-keygen -t ed25519 -C "brlcad-performance-dashboard-deploy" -f brlcad_dashboard_deploy_key
 ~~~
 
-This creates:
-
-~~~text
-brlcad_dashboard_deploy_key      # private key
-brlcad_dashboard_deploy_key.pub  # public key
-~~~
-
-Do not commit either file.
+This creates `brlcad_dashboard_deploy_key` (private) and `brlcad_dashboard_deploy_key.pub`
+(public). Do not commit either file.
 
 ---
 
@@ -31,14 +32,12 @@ In GitHub:
 ~~~text
   -> Settings
   -> Deploy keys
-  -> Add deploy key
+  -> Add deploy key   (enable "Allow write access" — the sender pushes commits here)
 ~~~
-
-The write access checkbox is required because the sending workflow will push commits into this repo.
 
 ---
 
-## 3. Add the private key to the sending repo secrets
+## 3. Add the private key to the sending repo's secrets
 
 In GitHub:
 
@@ -46,22 +45,15 @@ In GitHub:
   -> Settings
   -> Secrets and variables
   -> Actions
-  -> New repository secret
+  -> New repository secret      (e.g. DASHBOARD_DEPLOY_KEY)
 ~~~
-
-The name will be used within the runners yml - use something like DASHBOARD_DEPLOY_KEY.
 
 ---
 
-## 4. Add this minimal publish block to the sender's workflow
+## 4. Add this publish block to the sender's workflow
 
-Place this after the step that creates:
-
-~~~text
-$RESULTS_ROOT/summary/run.json
-~~~
-
-Example:
+Place it after the step that produces the run's `summary.json`
+(here `$RESULTS_ROOT/summary/run.json`):
 
 ~~~yaml
       - name: Checkout dashboard repo
@@ -72,7 +64,7 @@ Example:
           path: brlcad_performance_dashboard
           ssh-key: ${{ secrets.DASHBOARD_DEPLOY_KEY }}
 
-      - name: Commit performance summary to dashboard repo
+      - name: Publish performance summary to dashboard inbox
         if: always()
         run: |
           set -Eeuo pipefail
@@ -84,9 +76,8 @@ Example:
           timestamp="$(date -u +'%Y-%m-%dT%H%M%SZ')"
           run_id="${timestamp}-${short_sha}"
 
-          dest_dir="brlcad_performance_dashboard/data/runs/${run_id}"
+          dest_dir="brlcad_performance_dashboard/data/to_process/${run_id}"
           mkdir -p "$dest_dir"
-
           cp "$src" "$dest_dir/summary.json"
 
           cd brlcad_performance_dashboard
@@ -94,7 +85,7 @@ Example:
           git config user.name "brlcad-performance-bot"
           git config user.email "brlcad-performance-bot@users.noreply.github.com"
 
-          git add "data/runs/${run_id}/summary.json"
+          git add "data/to_process/${run_id}/summary.json"
 
           if git diff --cached --quiet; then
             echo "No dashboard changes to commit."
@@ -107,12 +98,15 @@ Example:
 
 ---
 
-## 5. Expected dashboard repo result
+## 5. Expected result
 
-After a successful performance run, the dashboard repo should receive a commit adding:
+After a successful run the dashboard repo receives a commit adding:
 
 ~~~text
-data/runs/2026-05-12T030000Z-abcdef123456/summary.json
+data/to_process/2026-05-12T030000Z-abcdef123456/summary.json
 ~~~
 
-The dashboard repo can then run its own workflow on push to validate, update, and deploy the github.io site
+That push triggers `ingest_and_deploy.yml`, which moves the data into
+`data/master/results.jsonl`, deletes the inbox entry, regenerates the derived dashboard
+data, and deploys the github.io site. If the summary fails validation it is left in
+`data/to_process/` and the run is marked red (the rest of the dashboard still deploys).

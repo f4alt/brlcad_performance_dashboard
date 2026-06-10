@@ -91,34 +91,28 @@ export function formatShortTimestamp(value) {
   });
 }
 
-export async function fetchJson(path) {
-  const response = await fetch(path, { cache: 'no-store' });
+export async function fetchJson(path, options = {}) {
+  // Small, always-loaded files default to no-store; pass { cache: 'default' }
+  // for large lazily-loaded files (trend.json, per-run detail) so the browser
+  // can reuse them across views.
+  const response = await fetch(path, { cache: options.cache || 'no-store' });
   if (!response.ok) {
     throw new Error(`Could not load ${path}: ${response.status}`);
   }
   return response.json();
 }
 
-const DASHBOARD_UPLOAD_TREE_BASE = 'https://github.com/f4alt/brlcad_performance_dashboard/tree/main/';
+const EXPECTED_SCHEMA_VERSION = 1;
 
-export function uploadPackageHref(run) {
-  if (!run) {
-    return '#';
+export function checkSchemaVersion(payload, label, expected = EXPECTED_SCHEMA_VERSION) {
+  if (payload && payload.schema_version !== expected) {
+    console.warn(
+      `Unexpected schema_version in ${label}: got ${payload?.schema_version}, expected ${expected}. ` +
+      'The frontend and ingest contract may be out of sync.',
+    );
   }
-
-  const packagePath = run.package_path || (run.path ? String(run.path).replace(/\/?summary\.json$/, '') : '');
-  if (!packagePath) {
-    return '#';
-  }
-
-  if (/^https?:\/\//i.test(packagePath)) {
-    return packagePath;
-  }
-
-  return `${DASHBOARD_UPLOAD_TREE_BASE}${packagePath}`;
+  return payload;
 }
-
-export const uploadSummaryHref = uploadPackageHref;
 
 export function commitHref(run) {
   if (!run?.repository || !run?.commit) {
@@ -126,6 +120,18 @@ export function commitHref(run) {
   }
 
   return `https://github.com/${run.repository}/commit/${run.commit}`;
+}
+
+// The durable source of a run is its originating CI workflow (or the source
+// commit). Uploaded packages are no longer kept in-repo.
+export function sourceHref(run) {
+  if (!run) {
+    return '#';
+  }
+  if (run.workflow_url) {
+    return run.workflow_url;
+  }
+  return commitHref(run) || '#';
 }
 
 export function runOptionLabel(run, status = null) {
@@ -240,7 +246,7 @@ export function renderLineChart(seriesList, options = {}) {
         `Commit: ${point.short_commit || point.commit || 'unknown'}`,
         `Timestamp: ${point.timestamp || 'unknown'}`,
       ].join('\n');
-      const href = options.href ? options.href(point, series.label) : point.summary_path;
+      const href = options.href ? options.href(point, series.label) : sourceHref(point);
       const circle = `
         <circle class="chart-point" cx="${point.sx.toFixed(2)}" cy="${point.sy.toFixed(2)}" r="4" stroke="${series.color}">
           <title>${escapeHtml(tooltip)}</title>

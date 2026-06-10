@@ -4,9 +4,12 @@ on:
   push:
     branches: [main]
     paths:
-      - "data/uploads/**/summary.json"
+      # Trigger on new inbox uploads + site/ingest changes. NOT data/master/** —
+      # the ingest commit writes there and must not re-trigger this workflow.
+      - "data/to_process/**/summary.json"
       - "site/**"
       - "scripts/**"
+      - "requirements.txt"
       - ".github/workflows/ingest_and_deploy.yml"
   workflow_dispatch:
 
@@ -22,13 +25,30 @@ concurrency:
 jobs:
   ingest-build:
     runs-on: ubuntu-latest
+    outputs:
+      quarantined: ${{ steps.gate.outputs.quarantined }}
 
     steps:
       - name: Checkout dashboard repo
         uses: actions/checkout@v4
 
-      - name: Validate summaries and update generated dashboard data
-        run: python3 scripts/ingest_summary.py
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install ingest dependencies
+        run: python3 -m pip install -r requirements.txt
+
+      - name: Build static site shell
+        run: |
+          set -Eeuo pipefail
+          rm -rf _site
+          mkdir -p _site
+          cp -R site/. _site/
+
+      - name: Ingest summaries and build derived dashboard data
+        run: python3 scripts/ingest_summary.py --out _site/data
 
       - name: Write ingest summary
         run: |
@@ -41,37 +61,34 @@ jobs:
           import json
           from pathlib import Path
 
-          index_path = Path("data/index.json")
-
+          index_path = Path("_site/data/index.json")
           if not index_path.is_file():
-              print("No data/index.json was generated.")
+              print("No _site/data/index.json was generated.")
               raise SystemExit(1)
 
           index = json.loads(index_path.read_text(encoding="utf-8"))
-          latest = index.get("latest_upload")
+          print(f"Total runs in master: `{index.get('run_count', 0)}`")
+          print("")
 
+          latest = index.get("latest_upload")
           if not latest:
-              print("No uploaded summaries found.")
+              print("No runs have been ingested yet.")
               raise SystemExit(0)
 
-          print(f"Acknowledged performance upload `{latest.get('id')}`")
+          print(f"Latest run `{latest.get('id')}`")
           print("")
           print(f"- Timestamp: `{latest.get('timestamp')}`")
           print(f"- Status: `{latest.get('status')}`")
-          print(f"- Summary: `{latest.get('path')}`")
-          print(f"- Package: `{latest.get('package_path')}`")
 
-          workflow_url = latest.get("workflow_url")
-          if workflow_url:
-              print(f"- Source workflow: {workflow_url}")
-
-          commit = latest.get("commit")
-          short_commit = latest.get("short_commit") or (commit[:12] if commit else "")
           repository = latest.get("repository")
+          commit = latest.get("commit")
           if repository and commit:
               print(f"- Commit: https://github.com/{repository}/commit/{commit}")
-          elif short_commit:
-              print(f"- Commit: `{short_commit}`")
+          elif latest.get("short_commit"):
+              print(f"- Commit: `{latest.get('short_commit')}`")
+
+          if latest.get("workflow_url"):
+              print(f"- Source workflow: {latest['workflow_url']}")
 
           lanes = latest.get("lanes") or {}
           if lanes:
@@ -81,58 +98,41 @@ jobs:
                   print(f"- `{name}`: `{lane_status}`")
           PY
 
-      - name: Commit generated dashboard data
-        run: |
-          set -Eeuo pipefail
-
-          paths=(
-            "data/index.json"
-            "data/benchmark"
-            "data/rtcmp_prims"
-            "data/rtcmp_generic"
-          )
-
-          existing_paths=()
-          for path in "${paths[@]}"; do
-            if [ -e "$path" ]; then
-              existing_paths+=("$path")
-            fi
-          done
-
-          if [ "${#existing_paths[@]}" -eq 0 ]; then
-            echo "No generated dashboard paths exist to stage."
-            exit 0
-          fi
-
-          git add "${existing_paths[@]}"
-
-          if git diff --cached --quiet; then
-            echo "No generated data changes to commit."
-          else
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-            git commit -m "Update generated dashboard data"
-            git push
-          fi
-
+      # Publish the freshly built _site BEFORE the git commit, so persisting the
+      # master log and publishing the dashboard fail independently.
       - name: Configure Pages
         uses: actions/configure-pages@v5
-
-      - name: Build static site
-        run: |
-          set -Eeuo pipefail
-
-          rm -rf _site
-          mkdir -p _site
-
-          cp -R site/. _site/
-          cp -R data _site/data
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
         with:
           path: _site
+
+      - name: Commit master log and pruned inbox
+        run: |
+          set -Eeuo pipefail
+
+          git add -A data/master data/to_process
+
+          if git diff --cached --quiet; then
+            echo "No master/inbox changes to commit."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+            git commit -m "Ingest performance runs [skip ci]"
+            # Be resilient to any other writer landing on main between checkout and push.
+            git pull --rebase --autostash origin main
+            git push
+          fi
+
+      - name: Detect quarantined uploads
+        id: gate
+        run: |
+          set -Eeuo pipefail
+          count="$(find data/to_process -mindepth 2 -maxdepth 2 -name summary.json | wc -l | tr -d ' ')"
+          echo "quarantined=${count}" >> "$GITHUB_OUTPUT"
+          echo "Quarantined uploads remaining: ${count}"
 
   deploy:
     runs-on: ubuntu-latest
@@ -146,3 +146,16 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  # Fails the run (visibly red) when any upload failed validation, WITHOUT
+  # blocking the deploy of the good data above.
+  quality-gate:
+    runs-on: ubuntu-latest
+    needs: ingest-build
+    if: ${{ needs.ingest-build.outputs.quarantined != '0' }}
+
+    steps:
+      - name: Fail on quarantined uploads
+        run: |
+          echo "::error::${{ needs.ingest-build.outputs.quarantined }} summary(ies) failed validation and remain in data/to_process/. Fix or remove them."
+          exit 1

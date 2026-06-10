@@ -1,0 +1,15 @@
+# Normalize line endings to LF for all text files. This repo is consumed by
+# Linux CI and GitHub Pages, and the append-only data/master/results.jsonl must
+# stay LF so each new run is a clean trailing-line diff (good git delta packing).
+* text=auto eol=lf
+
+*.jsonl text eol=lf
+*.json  text eol=lf
+*.py    text eol=lf
+*.js    text eol=lf
+*.css   text eol=lf
+*.html  text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf
+*.md    text eol=lf
+*.sh    text eol=lf

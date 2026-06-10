@@ -34,6 +34,8 @@
           <span class="status-pill" id="benchmark-status">Loading…</span>
         </div>
 
+        <div id="benchmark-message" class="notice warn" hidden></div>
+
         <div class="subsection">
           <div class="section-heading tight-heading">
             <h3>Benchmark comparison</h3>
@@ -58,64 +60,64 @@
         </div>
       </section>
 
-      <section class="card lane-card" id="rtcmp-prims-section">
+      <section class="card lane-card" id="rtcmp_prims-section">
         <div class="section-heading">
           <div>
             <p class="eyebrow">Lane</p>
             <h2>Primitive Performance</h2>
           </div>
-          <span class="status-pill" id="rtcmp-prims-status">Loading…</span>
+          <span class="status-pill" id="rtcmp_prims-status">Loading…</span>
         </div>
 
-        <div id="rtcmp-prims-message" class="notice muted">Loading primitive performance data…</div>
+        <div id="rtcmp_prims-message" class="notice muted">Loading primitive performance data…</div>
 
         <div class="subsection">
           <div class="section-heading tight-heading">
             <h3>Leaderboard</h3>
             <label class="select-label">
               Dataset
-              <select id="rtcmp-prims-run-select"></select>
+              <select id="rtcmp_prims-run-select"></select>
             </label>
           </div>
-          <p id="rtcmp-prims-count" class="muted small-text"></p>
+          <p id="rtcmp_prims-count" class="muted small-text"></p>
           <div class="leaderboard-shell">
-            <div id="rtcmp-prims-table" class="scroll-panel leaderboard-panel">Loading…</div>
-            <div id="rtcmp-prims-overlay" class="chart-overlay" hidden>
+            <div id="rtcmp_prims-table" class="scroll-panel leaderboard-panel">Loading…</div>
+            <div id="rtcmp_prims-overlay" class="chart-overlay" hidden>
               <div class="chart-overlay-card">
                 <div class="section-heading tight-heading">
-                  <h3 id="rtcmp-prims-chart-title">Primitive trend</h3>
-                  <button type="button" id="rtcmp-prims-overlay-close" class="secondary-button">Close</button>
+                  <h3 id="rtcmp_prims-chart-title">Primitive trend</h3>
+                  <button type="button" id="rtcmp_prims-overlay-close" class="secondary-button">Close</button>
                 </div>
-                <div id="rtcmp-prims-chart" class="chart-box">Select a primitive to view history.</div>
+                <div id="rtcmp_prims-chart" class="chart-box">Select a primitive to view history.</div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section class="card lane-card" id="rtcmp-generic-section">
+      <section class="card lane-card" id="rtcmp_generic-section">
         <div class="section-heading">
           <div>
             <p class="eyebrow">Lane</p>
             <h2>Generic Raytrace Comparison</h2>
           </div>
-          <span class="status-pill" id="rtcmp-generic-status">Loading…</span>
+          <span class="status-pill" id="rtcmp_generic-status">Loading…</span>
         </div>
 
-        <div id="rtcmp-generic-message" class="notice muted">Loading generic comparison data…</div>
+        <div id="rtcmp_generic-message" class="notice muted">Loading generic comparison data…</div>
 
         <div class="subsection dataset-row">
           <label class="select-label">
             Dataset
-            <select id="rtcmp-generic-run-select"></select>
+            <select id="rtcmp_generic-run-select"></select>
           </label>
         </div>
 
-        <div id="rtcmp-generic-chips" class="chip-grid"></div>
+        <div id="rtcmp_generic-chips" class="chip-grid"></div>
 
-        <details id="rtcmp-generic-details" class="subsection collapsible-table">
+        <details id="rtcmp_generic-details" class="subsection collapsible-table">
           <summary>Expand latest full table</summary>
-          <div id="rtcmp-generic-table" class="scroll-panel generic-table-panel">Loading…</div>
+          <div id="rtcmp_generic-table" class="scroll-panel generic-table-panel">Loading…</div>
         </details>
       </section>
     </main>

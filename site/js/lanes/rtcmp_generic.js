@@ -1,4 +1,5 @@
 import {
+  checkSchemaVersion,
   escapeHtml,
   fetchJson,
   formatNumber,
@@ -74,50 +75,84 @@ function renderTable(snapshot) {
   `;
 }
 
-export async function initRtcmpGenericSection() {
-  const runs = await fetchJson('data/rtcmp_generic/runs.json');
+export async function init() {
+  const latest = await fetchJson('data/rtcmp_generic/latest.json');
+  checkSchemaVersion(latest, 'rtcmp_generic/latest.json');
 
-  const statusEl = document.getElementById('rtcmp-generic-status');
-  const messageEl = document.getElementById('rtcmp-generic-message');
-  const runSelectEl = document.getElementById('rtcmp-generic-run-select');
-  const chipsEl = document.getElementById('rtcmp-generic-chips');
-  const tableEl = document.getElementById('rtcmp-generic-table');
+  const statusEl = document.getElementById('rtcmp_generic-status');
+  const messageEl = document.getElementById('rtcmp_generic-message');
+  const runSelectEl = document.getElementById('rtcmp_generic-run-select');
+  const chipsEl = document.getElementById('rtcmp_generic-chips');
+  const tableEl = document.getElementById('rtcmp_generic-table');
 
-  const snapshots = runs.snapshots || [];
+  const runs = latest.runs || [];
 
-  runSelectEl.innerHTML = snapshots.length
-    ? snapshots.map((snapshot, index) => `
-        <option value="${index}">${escapeHtml(runOptionLabel(snapshot.run, snapshot.status))}</option>
-      `).join('')
-    : '<option value="">No generic datasets available</option>';
-  runSelectEl.disabled = snapshots.length === 0;
-
-  function selectedSnapshot() {
-    return snapshots[Number(runSelectEl.value)] || snapshots[0] || null;
+  // Seed the cache with the latest snapshot embedded in latest.json.
+  const detailCache = new Map();
+  if (latest.source_run?.id) {
+    detailCache.set(latest.source_run.id, {
+      run: latest.source_run,
+      status: latest.status,
+      columns: latest.columns || [],
+      visible_columns: latest.visible_columns,
+      summary: latest.summary || {},
+      rows: latest.rows || [],
+    });
   }
 
-  function render() {
-    const snapshot = selectedSnapshot();
+  runSelectEl.innerHTML = runs.length
+    ? runs.map((run) => `
+        <option value="${escapeHtml(run.id)}">${escapeHtml(runOptionLabel(run, run.status))}</option>
+      `).join('')
+    : '<option value="">No generic datasets available</option>';
+  runSelectEl.disabled = runs.length === 0;
 
-    if (!snapshot) {
+  function selectedRun() {
+    return runs.find((run) => run.id === runSelectEl.value) || runs[0] || null;
+  }
+
+  async function getSnapshot(run) {
+    if (!run) {
+      return null;
+    }
+    if (detailCache.has(run.id)) {
+      return detailCache.get(run.id);
+    }
+    const detail = await fetchJson(`data/rtcmp_generic/runs/${run.detail}`, { cache: 'default' });
+    detailCache.set(run.id, detail);
+    return detail;
+  }
+
+  async function render() {
+    const run = selectedRun();
+
+    if (!run) {
       setStatus(statusEl, 'UNKNOWN');
+      messageEl.classList.remove('fail');
       messageEl.textContent = 'No generic comparison data has been ingested yet.';
       chipsEl.innerHTML = renderChips({});
       tableEl.innerHTML = '<p class="muted">No generic comparison rows are available.</p>';
       return;
     }
 
-    setStatus(statusEl, snapshot.status || 'UNKNOWN');
+    let snapshot;
+    try {
+      snapshot = await getSnapshot(run);
+    } catch (error) {
+      messageEl.classList.add('fail');
+      messageEl.textContent = `Failed to load run ${run.id}: ${error.message}`;
+      return;
+    }
 
-    messageEl.classList.toggle('warn', snapshot.status !== 'PASS');
-    messageEl.innerHTML = snapshot.run
-      ? `Generic table from <code>${escapeHtml(snapshot.run.id || 'unknown run')}</code> · ${escapeHtml(formatTimestamp(snapshot.run.timestamp))}.`
-      : 'No generic comparison run metadata is available.';
+    setStatus(statusEl, snapshot?.status || 'UNKNOWN');
+    messageEl.classList.remove('fail');
+    messageEl.classList.toggle('warn', snapshot?.status !== 'PASS');
+    messageEl.innerHTML = `Generic table from <code>${escapeHtml(run.id || 'unknown run')}</code> · ${escapeHtml(formatTimestamp(run.timestamp))}.`;
 
-    chipsEl.innerHTML = renderChips(snapshot.summary || {});
-    tableEl.innerHTML = renderTable(snapshot);
+    chipsEl.innerHTML = renderChips(snapshot?.summary || {});
+    tableEl.innerHTML = renderTable(snapshot || {});
   }
 
   runSelectEl.addEventListener('change', render);
-  render();
+  await render();
 }

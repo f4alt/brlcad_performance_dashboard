@@ -1,10 +1,18 @@
-"""Shared helpers for lane processors."""
+"""Shared helpers for lane processors.
+
+Lane processors receive the in-memory list of master records (one per ingested
+run, newest-last) and write COMPACT derived dashboard data into an output
+directory. They never read or write the durable master themselves.
+"""
 
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import Any
+
+_FILENAME_SAFE = re.compile(r"[^A-Za-z0-9._-]+")
 
 
 def as_status(value: Any) -> str:
@@ -34,58 +42,56 @@ def to_nonnegative_float(value: Any) -> float | None:
 
 
 def rows_from_lane(lane: dict[str, Any]) -> list[dict[str, Any]]:
-    """Return lane rows as dictionaries.
+    """Return a lane's object-rows.
 
-    Supports the dashboard object-row shape:
+    The current producer contract is object rows:
         {"rows": [{"build": "...", "vgr": 123}]}
-
-    Also supports the earlier CSV-table shape:
-        {"summary": [["build", "vgr"], ["...", "123"]]}
     """
     rows = lane.get("rows")
     if isinstance(rows, list):
         return [row for row in rows if isinstance(row, dict)]
-
-    summary = lane.get("summary")
-    if not isinstance(summary, list) or not summary:
-        return []
-
-    header = summary[0]
-    if not isinstance(header, list):
-        return []
-
-    columns = [str(column) for column in header]
-    normalized_rows: list[dict[str, Any]] = []
-
-    for raw_row in summary[1:]:
-        if not isinstance(raw_row, list):
-            continue
-
-        row: dict[str, Any] = {}
-        for index, column in enumerate(columns):
-            row[column] = raw_row[index] if index < len(raw_row) else ""
-
-        normalized_rows.append(row)
-
-    return normalized_rows
+    return []
 
 
 def write_json(path: Path, payload: dict[str, Any] | list[Any]) -> None:
+    """Write derived data compactly (it is rebuilt every deploy, never committed)."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    path.write_text(
+        json.dumps(payload, separators=(",", ":"), sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
 
 
-def run_info_from_upload(upload: dict[str, Any]) -> dict[str, Any]:
-    index = upload.get("index", {})
+def run_info_from_record(record: dict[str, Any]) -> dict[str, Any]:
+    index = record.get("index", {})
     return index if isinstance(index, dict) else {}
 
 
 def point_source(run_info: dict[str, Any]) -> dict[str, Any]:
+    """Minimal per-point provenance for charts (links + tooltips)."""
     return {
         "run_id": run_info.get("id"),
         "timestamp": run_info.get("timestamp"),
         "commit": run_info.get("commit"),
         "short_commit": run_info.get("short_commit"),
-        "summary_path": run_info.get("path"),
-        "package_path": run_info.get("package_path"),
+        "repository": run_info.get("repository"),
+        "workflow_url": run_info.get("workflow_url"),
+    }
+
+
+def safe_run_filename(run_id: str) -> str:
+    """Filesystem/URL-safe filename for a per-run detail file."""
+    cleaned = _FILENAME_SAFE.sub("_", str(run_id or "run")).strip("_") or "run"
+    return f"{cleaned}.json"
+
+
+def thin_run(run_info: dict[str, Any], status: str) -> dict[str, Any]:
+    """A small descriptor used to populate run-picker dropdowns (no rows)."""
+    run_id = run_info.get("id")
+    return {
+        "id": run_id,
+        "timestamp": run_info.get("timestamp"),
+        "short_commit": run_info.get("short_commit"),
+        "status": status,
+        "detail": safe_run_filename(run_id),
     }

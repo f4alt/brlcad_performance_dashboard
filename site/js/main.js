@@ -1,7 +1,4 @@
-import { initBenchmarkSection } from './lanes/benchmark.js';
-import { initRtcmpGenericSection } from './lanes/rtcmp_generic.js';
-import { initRtcmpPrimsSection } from './lanes/rtcmp_prims.js';
-import { commitHref, escapeHtml, fetchJson, formatTimestamp, setStatus, uploadSummaryHref } from './utils.js';
+import { commitHref, escapeHtml, fetchJson, formatTimestamp, setStatus, sourceHref } from './utils.js';
 
 function renderLatestUpload(latest) {
   const el = document.getElementById('latest-upload');
@@ -10,16 +7,16 @@ function renderLatestUpload(latest) {
     el.innerHTML = `
       <div>
         <p class="eyebrow">Latest upload</p>
-        <strong>No uploads yet</strong>
+        <strong>No runs yet</strong>
       </div>
-      <div class="muted">Waiting for the first <code>summary.json</code> package.</div>
+      <div class="muted">Waiting for the first <code>summary.json</code> in <code>data/to_process/</code>.</div>
     `;
     return;
   }
 
   const commitUrl = commitHref(latest);
   const commitLabel = latest.short_commit || latest.commit || 'unknown';
-  const dataHref = uploadSummaryHref(latest);
+  const srcHref = sourceHref(latest);
 
   el.innerHTML = `
     <div>
@@ -37,25 +34,30 @@ function renderLatestUpload(latest) {
       <span class="status-pill ${escapeHtml(`status-${latest.status || 'UNKNOWN'}`)}">${escapeHtml(latest.status || 'UNKNOWN')}</span>
     </div>
     <div>
-      <p class="eyebrow">Data</p>
-      <a href="${escapeHtml(dataHref)}" target="_blank" rel="noopener noreferrer">upload package</a>
+      <p class="eyebrow">Source</p>
+      ${srcHref && srcHref !== '#'
+        ? `<a href="${escapeHtml(srcHref)}" target="_blank" rel="noopener noreferrer">source run</a>`
+        : '<span class="muted">—</span>'}
     </div>
   `;
 }
 
-async function initLane(name, initFn) {
+async function initLane(name, title) {
   try {
-    await initFn();
+    const module = await import(`./lanes/${name}.js`);
+    if (typeof module.init !== 'function') {
+      throw new Error(`lane module ${name}.js does not export init()`);
+    }
+    await module.init();
   } catch (error) {
     console.error(`Failed to initialize ${name}`, error);
 
-    const statusEl = document.getElementById(`${name}-status`);
-    const messageEl = document.getElementById(`${name}-message`);
+    setStatus(document.getElementById(`${name}-status`), 'UNKNOWN');
 
-    setStatus(statusEl, 'UNKNOWN');
+    const messageEl = document.getElementById(`${name}-message`);
     if (messageEl) {
       messageEl.classList.add('fail');
-      messageEl.textContent = `Failed to load ${name}: ${error.message}`;
+      messageEl.textContent = `Failed to load ${title || name}: ${error.message}`;
     }
   }
 }
@@ -64,9 +66,10 @@ async function loadDashboard() {
   const index = await fetchJson('data/index.json');
   renderLatestUpload(index.latest_upload || null);
 
-  await initLane('benchmark', initBenchmarkSection);
-  await initLane('rtcmp-prims', initRtcmpPrimsSection);
-  await initLane('rtcmp-generic', initRtcmpGenericSection);
+  const lanes = await fetchJson('data/lanes.json');
+  for (const lane of lanes) {
+    await initLane(lane.name, lane.title);
+  }
 }
 
 loadDashboard().catch((error) => {

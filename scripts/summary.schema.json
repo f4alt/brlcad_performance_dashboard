@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/f4alt/brlcad_performance_dashboard/scripts/summary.schema.json",
+  "title": "BRL-CAD performance summary.json",
+  "description": "Contract for an immutable per-run summary pushed into data/to_process/<run-id>/summary.json. This file is the single source of truth for the fields the dashboard ingestion and lane processors depend on. If the BRL-CAD runner changes any required shape, bump schema_version and update the relevant lane processor.",
+  "type": "object",
+  "required": ["run", "lanes"],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "description": "Producer schema version. Currently 1."
+    },
+    "generated_at": {
+      "type": "string",
+      "description": "ISO-8601 timestamp the summary was produced (fallback for run.timestamp)."
+    },
+    "lane_order": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Optional preferred display order of lanes. Drives the lanes.json manifest when present."
+    },
+    "run": {
+      "type": "object",
+      "description": "Run identity and provenance. run.id is the canonical dedup key. A run timestamp is required but may be supplied via run.timestamp or the top-level generated_at (enforced by ingest), so only id is required here.",
+      "required": ["id"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1, "description": "Canonical run id (dedup key)."},
+        "timestamp": {"type": "string", "minLength": 1, "description": "ISO-8601 run timestamp; drives ordering. Falls back to top-level generated_at."},
+        "commit": {"type": "string", "description": "Full source commit SHA (used for commit links)."},
+        "short_commit": {"type": "string", "description": "Short commit SHA for display."},
+        "branch": {"type": "string"},
+        "ref": {"type": "string"},
+        "repository": {"type": "string", "description": "owner/name of the source repo (used for commit links)."},
+        "workflow": {"type": "string"},
+        "workflow_run_id": {"type": ["string", "integer"]},
+        "workflow_url": {"type": "string", "description": "URL of the source CI run (used for the source link)."}
+      }
+    },
+    "overall_status": {"type": "string"},
+    "lanes": {
+      "type": "object",
+      "minProperties": 1,
+      "description": "Map of lane-name -> lane payload. Each lane processor reads only its own lane.",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["status"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "Lane status. Compared case-insensitively against PASS/FAIL/SKIP/UNKNOWN."
+          },
+          "description": {"type": "string"},
+          "columns": {"type": "array", "items": {"type": "string"}},
+          "rows": {
+            "type": "array",
+            "description": "Object rows. Field names per lane: benchmark needs build+vgr; rtcmp_prims needs prim+rays_per_sec(+status); rtcmp_generic uses the perf*/compare_status/perf_delta_percent columns.",
+            "items": {"type": "object"}
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,11 +1,12 @@
 import {
+  checkSchemaVersion,
   escapeHtml,
   fetchJson,
   formatNumber,
   formatShortTimestamp,
   renderLineChart,
   setStatus,
-  uploadPackageHref,
+  sourceHref,
 } from '../utils.js';
 
 function pointId(point, index) {
@@ -128,7 +129,7 @@ function renderBenchmarkChart(series, labels) {
       `Commit: ${point.short_commit || point.commit || 'unknown'}`,
       `Timestamp: ${point.timestamp || 'unknown'}`,
     ].join('\n'),
-    href: (point) => uploadPackageHref(point),
+    href: (point) => sourceHref(point),
   });
 }
 
@@ -164,19 +165,34 @@ function defaultSelectedPointIds(points, latestRows) {
   return selected;
 }
 
-export async function initBenchmarkSection() {
+export async function init() {
   const [latest, series] = await Promise.all([
     fetchJson('data/benchmark/latest.json'),
-    fetchJson('data/benchmark/series.json'),
+    fetchJson('data/benchmark/trend.json', { cache: 'default' }),
   ]);
+  checkSchemaVersion(latest, 'benchmark/latest.json');
+  checkSchemaVersion(series, 'benchmark/trend.json');
 
   const statusEl = document.getElementById('benchmark-status');
+  const messageEl = document.getElementById('benchmark-message');
   const tableEl = document.getElementById('benchmark-latest-table');
   const checkboxEl = document.getElementById('benchmark-label-checkboxes');
   const chartEl = document.getElementById('benchmark-chart');
 
-  const effectiveStatus = latest.rows?.length ? 'PASS' : 'UNKNOWN';
-  setStatus(statusEl, effectiveStatus);
+  // The processor computes the true latest status (which may be FAIL even when we
+  // show the most recent passing snapshot below) plus a staleness message.
+  const status = latest.latest_benchmark_status || (latest.rows?.length ? 'PASS' : 'UNKNOWN');
+  setStatus(statusEl, status);
+
+  if (messageEl) {
+    if (latest.stale && latest.message) {
+      messageEl.hidden = false;
+      messageEl.classList.add('warn');
+      messageEl.textContent = latest.message;
+    } else {
+      messageEl.hidden = true;
+    }
+  }
 
   const points = flattenBenchmarkPoints(series);
   let selectedPointIds = defaultSelectedPointIds(points, latest.rows || []);
